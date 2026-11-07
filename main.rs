@@ -69,6 +69,27 @@ fn query_id(q: &str) -> Option<&str> {
         .filter(|v| v.len() == 32 && v.bytes().all(|b| b.is_ascii_hexdigit()))
 }
 
+const LANGS: [&str; 2] = ["ru", "en"];
+const TAGS: [&str; 11] = [
+    "talk", "music", "games", "movies", "anime", "sport", "tech", "books", "travel", "memes", "study",
+];
+
+fn query_param<'a>(q: &'a str, key: &str) -> Option<&'a str> {
+    q.split('&').find_map(|kv| kv.split_once('=').filter(|(k, _)| *k == key).map(|(_, v)| v))
+}
+
+/// Язык и интересы из запроса. Принимаются только значения из белого списка, не больше трёх интересов.
+fn parse_filters(q: &str) -> (String, Vec<String>) {
+    let lang = query_param(q, "lang").filter(|l| LANGS.contains(l)).unwrap_or("ru").to_string();
+    let mut tags: Vec<String> = Vec::new();
+    for t in query_param(q, "tags").unwrap_or("").split(',') {
+        if TAGS.contains(&t) && !tags.iter().any(|x| x == t) && tags.len() < 3 {
+            tags.push(t.to_string());
+        }
+    }
+    (lang, tags)
+}
+
 fn route(sh: &Shared, req: &Req) -> Resp {
     let now = Instant::now();
     match (req.method.as_str(), req.path.as_str()) {
@@ -92,7 +113,11 @@ fn route(sh: &Shared, req: &Req) -> Resp {
             let r = {
                 let mut st = sh.lock();
                 match p {
-                    "/api/find" => st.find(id, now).map(|_| "{\"ok\":true}".to_string()),
+                    "/api/find" => {
+                        let (lang, tags) = parse_filters(&req.query);
+                        st.find(id, now, &lang, &tags)
+                    }
+                    .map(|_| "{\"ok\":true}".to_string()),
                     "/api/leave" => st.leave(id, now).map(|_| "{\"ok\":true}".to_string()),
                     "/api/send" => st.send(id, &req.body, now).map(|_| "{\"ok\":true}".to_string()),
                     "/api/typing" => st.typing(id, now).map(|_| "{\"ok\":true}".to_string()),
@@ -202,7 +227,7 @@ fn write_response(mut s: &TcpStream, r: &Resp) {
     let head = format!(
         "HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nCache-Control: no-store\r\n\
          X-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\n\
-         Content-Security-Policy: default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'\r\n\
+         Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'\r\n\
          Connection: close\r\n\r\n",
         r.status,
         reason,
@@ -265,6 +290,14 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn filters_are_whitelisted() {
+        let (l, t) = parse_filters("id=x&lang=en&tags=music,evil,games,music,anime,sport");
+        assert_eq!(l, "en");
+        assert_eq!(t, vec!["music", "games", "anime"]);
+        assert_eq!(parse_filters("id=x&lang=zz").0, "ru");
+    }
 
     #[test]
     fn client_ip_uses_trusted_hops_only() {

@@ -2,83 +2,194 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Аноним-чат</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c1316">
+<title>Эхо — анонимный чат</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%230c1316'/%3E%3Cpath d='M8 10h20a6 6 0 0 1 6 6v8a6 6 0 0 1-6 6H18l-7 6v-6H8a6 6 0 0 1-6-6v-8a6 6 0 0 1 6-6z' fill='%2342e0b0' transform='translate(3 3) scale(.85)'/%3E%3C/svg%3E">
 <style>
-  :root{--bg:#0f1117;--panel:#181b24;--line:#272b38;--text:#e8eaf0;--muted:#8a91a5;--accent:#6c8cff;--me:#2c3a73;--them:#232736;--danger:#ff6b6b}
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-  .wrap{max-width:720px;height:100%;margin:0 auto;display:flex;flex-direction:column;padding:12px}
-  header{display:flex;align-items:center;justify-content:space-between;padding:8px 4px}
-  h1{font-size:18px;margin:0}
-  #status{color:var(--muted);font-size:14px}
-  #log{flex:1;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
-  .m{max-width:80%;padding:8px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word}
-  .me{align-self:flex-end;background:var(--me)}
-  .them{align-self:flex-start;background:var(--them)}
-  .sys{align-self:center;color:var(--muted);font-size:13px;text-align:center}
-  #typing{height:20px;color:var(--muted);font-size:13px;padding:2px 6px}
-  form{display:flex;gap:8px}
-  input[type=text]{flex:1;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:16px}
-  button{padding:12px 16px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-size:15px;cursor:pointer}
-  button.ghost{background:var(--panel);border:1px solid var(--line);color:var(--text)}
-  button.danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
-  button:disabled,input:disabled{opacity:.45;cursor:not-allowed}
-  .row{display:flex;gap:8px;margin:8px 0}
-  .row button{flex:1}
-  #gate{max-width:420px;margin:15vh auto;padding:20px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
-  #gate label{display:flex;gap:10px;align-items:flex-start;margin:14px 0;color:var(--muted);font-size:14px}
+  :root{
+    --bg:#0c1316; --panel:#121c20; --panel2:#18252a; --line:#223339;
+    --text:#e9f1ef; --muted:#8aa0a0; --accent:#42e0b0; --accent-ink:#06231a;
+    --coral:#ff7a66; --me:#17463b; --them:#1b2a30;
+    --r:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+  body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   [hidden]{display:none!important}
+  button{font:inherit;color:inherit;cursor:pointer}
+  button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* ---------- старт ---------- */
+  #start{min-height:100%;display:flex;flex-direction:column;align-items:center;padding:28px 16px 24px;
+    background:radial-gradient(120% 60% at 50% -10%,#12332f 0%,transparent 60%)}
+  .brand{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin-top:4vh}
+  .logo{width:72px;height:72px}
+  .brand h1{margin:0;font-size:40px;letter-spacing:.02em;font-weight:800}
+  .brand p{margin:0;color:var(--muted);max-width:30ch}
+  .card{width:100%;max-width:460px;margin-top:26px;background:var(--panel);border:1px solid var(--line);
+    border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:18px}
+  .label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg);padding:4px;border-radius:12px}
+  .seg button{border:0;background:transparent;padding:10px;border-radius:9px;color:var(--muted)}
+  .seg button[aria-pressed=true]{background:var(--panel2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);background:transparent;padding:8px 14px;border-radius:999px;color:var(--text)}
+  .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+  .chip:disabled{opacity:.4;cursor:not-allowed}
+  .agree{display:flex;gap:10px;align-items:flex-start;color:var(--muted);font-size:14px}
+  .agree input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);flex:none}
+  .cta{border:0;border-radius:14px;padding:16px;background:var(--accent);color:var(--accent-ink);font-size:18px;font-weight:700}
+  .cta:disabled{opacity:.4;cursor:not-allowed}
+  .online{font-size:13px;color:var(--muted);text-align:center}
+  .rules{max-width:460px;width:100%;margin-top:18px;color:var(--muted);font-size:13px;line-height:1.5}
+  .rules summary{cursor:pointer;color:var(--text)}
+  .rules ul{margin:8px 0 0;padding-left:20px}
+
+  /* ---------- чат ---------- */
+  #chat{height:100%;display:flex;flex-direction:column;max-width:720px;margin:0 auto;padding:10px 12px 12px}
+  .top{display:flex;align-items:center;gap:10px;padding:4px 2px 10px}
+  .top .logo{width:30px;height:30px}
+  .top b{font-size:18px}
+  #status{margin-left:auto;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+  .dot.on{background:var(--accent)}
+  .dot.wait{background:#ffc857;animation:pulse 1.2s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+  #log{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+    padding:12px;display:flex;flex-direction:column;gap:8px}
+  .m{max-width:82%;padding:9px 13px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .me{align-self:flex-end;background:var(--me);border-bottom-right-radius:6px}
+  .them{align-self:flex-start;background:var(--them);border-bottom-left-radius:6px}
+  .sys{align-self:center;color:var(--muted);font-size:13px;text-align:center;padding:2px 8px}
+  .empty{margin:auto;text-align:center;color:var(--muted);max-width:26ch}
+  .empty .ring{width:54px;height:54px;border-radius:50%;margin:0 auto 14px;border:3px solid var(--accent);opacity:.8;animation:ring 1.6s ease-out infinite}
+  @keyframes ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.25);opacity:0}}
+  #typing{height:22px;color:var(--muted);font-size:13px;padding:2px 6px}
+  .bar{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px}
+  .bar button{padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--panel2)}
+  .bar .next{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+  .bar .rep{color:var(--coral);border-color:#5a2f2a;background:transparent}
+  .bar button:disabled{opacity:.4;cursor:not-allowed}
+  form{display:flex;gap:8px}
+  #text{flex:1;min-width:0;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:16px}
+  #sendBtn{border:0;border-radius:14px;padding:0 18px;background:var(--accent);color:var(--accent-ink);font-weight:700}
+  #sendBtn:disabled,#text:disabled{opacity:.4}
+  @media (prefers-reduced-motion:reduce){.dot.wait,.empty .ring{animation:none}}
 </style>
 </head>
 <body>
-<div id="gate">
-  <h1>Аноним-чат</h1>
-  <p style="color:var(--muted)">Текстовый чат со случайным собеседником. Никаких аккаунтов, переписка не сохраняется.</p>
-  <label><input type="checkbox" id="age"> <span>Мне есть 18 лет, и я согласен(на) не присылать оскорбления, угрозы, спам и запрещённый контент. Нарушителей можно блокировать жалобой.</span></label>
-  <button id="enter" disabled style="width:100%">Войти</button>
-</div>
 
-<div class="wrap" id="app" hidden>
-  <header><h1>Аноним-чат</h1><span id="status">…</span></header>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 48 48">
+    <path d="M8 10h20a6 6 0 0 1 6 6v8a6 6 0 0 1-6 6H18l-7 6v-6H8a6 6 0 0 1-6-6v-8a6 6 0 0 1 6-6z" fill="#42e0b0"/>
+    <path d="M38 14.5c3 3 3 9 0 12" fill="none" stroke="#42e0b0" stroke-width="3" stroke-linecap="round"/>
+    <path d="M43 10c5 5.5 5 14.5 0 20" fill="none" stroke="#42e0b0" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+    <circle cx="12" cy="20" r="2.2" fill="#06231a"/><circle cx="19" cy="20" r="2.2" fill="#06231a"/><circle cx="26" cy="20" r="2.2" fill="#06231a"/>
+  </symbol>
+</svg>
+
+<main id="start">
+  <div class="brand">
+    <svg class="logo" role="img" aria-label="Логотип Эхо"><use href="#logo"/></svg>
+    <h1>Эхо</h1>
+    <p>Случайный собеседник. Без регистрации, переписка не сохраняется.</p>
+  </div>
+
+  <section class="card" aria-label="Настройки поиска">
+    <div>
+      <div class="label"><span>Язык общения</span></div>
+      <div class="seg" id="langSeg">
+        <button type="button" data-lang="ru" aria-pressed="true">Русский</button>
+        <button type="button" data-lang="en" aria-pressed="false">English</button>
+      </div>
+    </div>
+    <div>
+      <div class="label"><span>О чём поговорим</span><span id="tagCount">0 / 3</span></div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <label class="agree"><input type="checkbox" id="age"><span>Мне есть 18 лет. Я не буду присылать оскорбления, угрозы, спам и запрещённый контент.</span></label>
+    <button class="cta" id="go" disabled>Начать чат</button>
+    <div class="online" id="online">Интересы только помогают найти близкого по темам человека. Если никого нет, соединим с любым.</div>
+  </section>
+
+  <details class="rules">
+    <summary>Правила и безопасность</summary>
+    <ul>
+      <li>Не сообщайте личные данные: имя, адрес, телефон, соцсети.</li>
+      <li>Если собеседник ведёт себя плохо, нажмите «Жалоба». После нескольких жалоб от разных людей доступ блокируется.</li>
+      <li>Сервис только для совершеннолетних. Не используйте его, если вам нет 18.</li>
+      <li>Сообщения не записываются, но собеседник может сделать скриншот.</li>
+    </ul>
+  </details>
+</main>
+
+<main id="chat" hidden>
+  <div class="top">
+    <svg class="logo" aria-hidden="true"><use href="#logo"/></svg><b>Эхо</b>
+    <span id="status"><span class="dot" id="dot"></span><span id="statusText">…</span></span>
+  </div>
   <div id="log"></div>
-  <div id="typing"></div>
-  <div class="row">
-    <button id="find">Найти собеседника</button>
-    <button id="leave" class="ghost" disabled>Завершить</button>
-    <button id="report" class="danger" disabled>Пожаловаться</button>
+  <div id="typing" aria-live="polite"></div>
+  <div class="bar">
+    <button id="stop">Стоп</button>
+    <button id="next" class="next">Следующий</button>
+    <button id="report" class="rep">Жалоба</button>
   </div>
   <form id="form">
-    <input type="text" id="text" maxlength="500" autocomplete="off" placeholder="Сообщение…" disabled>
+    <input id="text" type="text" maxlength="500" autocomplete="off" placeholder="Сообщение…" disabled>
     <button id="sendBtn" disabled>Отправить</button>
   </form>
-</div>
+</main>
 
 <script>
+const TAGS = [['talk','Просто поболтать'],['music','Музыка'],['games','Игры'],['movies','Кино'],['anime','Аниме'],['sport','Спорт'],['tech','Технологии'],['books','Книги'],['travel','Путешествия'],['memes','Мемы'],['study','Учёба']];
 const $ = id => document.getElementById(id);
-let sid = null, mode = 'idle', epoch = 0, typingTimer = null, lastTypingSent = 0;
+let sid = null, mode = 'idle', epoch = 0, lang = 'ru', tags = [], typingTimer = null, lastTypingSent = 0;
 
-$('age').onchange = () => $('enter').disabled = !$('age').checked;
-$('enter').onclick = async () => {
-  $('gate').hidden = true; $('app').hidden = false;
-  await join();
-  await api('/api/find');
+// ---------- меню ----------
+try { const s = JSON.parse(localStorage.getItem('echo.prefs') || '{}'); if (s.lang) lang = s.lang; if (Array.isArray(s.tags)) tags = s.tags.slice(0, 3); } catch {}
+function savePrefs() { try { localStorage.setItem('echo.prefs', JSON.stringify({lang, tags})); } catch {} }
+
+function renderMenu() {
+  document.querySelectorAll('#langSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang));
+  $('tagCount').textContent = tags.length + ' / 3';
+  $('chips').innerHTML = '';
+  for (const [id, name] of TAGS) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = name;
+    const on = tags.includes(id);
+    b.setAttribute('aria-pressed', on);
+    b.disabled = !on && tags.length >= 3;
+    b.onclick = () => { tags = on ? tags.filter(t => t !== id) : [...tags, id]; savePrefs(); renderMenu(); };
+    $('chips').appendChild(b);
+  }
+}
+document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => { lang = b.dataset.lang; savePrefs(); renderMenu(); });
+$('age').onchange = () => $('go').disabled = !$('age').checked;
+renderMenu();
+
+$('go').onclick = async () => {
+  $('start').hidden = true; $('chat').hidden = false;
+  try { await join(); await find(); } catch (e) { sys(e.message || 'Не удалось подключиться'); }
 };
 
-async function api(path, body) {
-  const r = await fetch(path + '?id=' + sid, {method: 'POST', body: body ?? '', headers: {'Content-Type': 'text/plain; charset=utf-8'}});
+// ---------- сеть ----------
+async function api(path, body, extra) {
+  const r = await fetch(path + '?id=' + sid + (extra || ''), {method: 'POST', body: body ?? '', headers: {'Content-Type': 'text/plain; charset=utf-8'}});
   let j = {}; try { j = await r.json(); } catch {}
   if (r.status === 404) { await join(); }
-  if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+  if (!r.ok) throw new Error(j.error || ('Ошибка ' + r.status));
   return j;
 }
+const find = () => { clearLog(); return api('/api/find', '', '&lang=' + lang + '&tags=' + tags.join(',')); };
 
 async function join() {
   const r = await fetch('/api/join', {method: 'POST'});
-  const j = await r.json();
-  if (!r.ok) { sys(j.error || 'Не удалось войти'); setMode('banned'); throw new Error(j.error); }
-  sid = j.id; setMode('idle');
-  poll(++epoch);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { sys(j.error || 'Не удалось войти'); setMode('banned'); throw new Error(j.error || 'Не удалось войти'); }
+  sid = j.id; setMode('idle'); poll(++epoch);
 }
 
 async function poll(my) {
@@ -93,36 +204,45 @@ async function poll(my) {
 }
 
 function handle(e) {
-  if (e.t === 'waiting') { setMode('waiting'); sys('Ищем собеседника…'); }
-  else if (e.t === 'matched') { $('log').innerHTML = ''; setMode('chat'); sys('Собеседник найден. Поздоровайтесь!'); }
+  if (e.t === 'waiting') { setMode('waiting'); showSearching(); }
+  else if (e.t === 'matched') { clearLog(); setMode('chat'); sys('Собеседник найден. Поздоровайтесь!'); }
   else if (e.t === 'msg') { add('them', e.text); $('typing').textContent = ''; }
   else if (e.t === 'typing') { $('typing').textContent = 'Собеседник печатает…'; clearTimeout(typingTimer); typingTimer = setTimeout(() => $('typing').textContent = '', 3000); }
   else if (e.t === 'left') { sys('Собеседник завершил чат.'); setMode('ended'); $('typing').textContent = ''; }
-  else if (e.t === 'banned') { sys('Вы заблокированы по жалобам пользователей.'); setMode('banned'); }
+  else if (e.t === 'banned') { sys('Доступ заблокирован из-за жалоб пользователей.'); setMode('banned'); }
 }
 
+// ---------- интерфейс чата ----------
 function setMode(m) {
   mode = m;
   const chat = m === 'chat';
   $('text').disabled = $('sendBtn').disabled = !chat;
-  $('leave').disabled = !(chat || m === 'waiting');
+  $('stop').disabled = !(chat || m === 'waiting');
+  $('next').disabled = m === 'banned' || m === 'idle';
   $('report').disabled = !(chat || m === 'ended');
-  $('find').disabled = chat || m === 'waiting' || m === 'banned';
-  $('status').textContent = {idle: 'не в чате', waiting: 'поиск…', chat: 'в чате', ended: 'чат завершён', banned: 'блокировка'}[m];
+  const label = {idle: 'подключение…', waiting: 'ищем собеседника', chat: 'на связи', ended: 'чат завершён', banned: 'заблокировано'}[m];
+  $('statusText').textContent = label;
+  $('dot').className = 'dot' + (m === 'chat' ? ' on' : m === 'waiting' ? ' wait' : '');
   if (chat) $('text').focus();
 }
-
-function add(cls, text) {
-  const d = document.createElement('div');
-  d.className = 'm ' + cls; d.textContent = text;
-  $('log').appendChild(d); $('log').scrollTop = 1e9;
+function clearLog() { $('log').innerHTML = ''; }
+function showSearching() {
+  clearLog();
+  const d = document.createElement('div'); d.className = 'empty';
+  d.innerHTML = '<div class="ring"></div>Ищем собеседника…<br>Можно подождать или нажать «Стоп».';
+  $('log').appendChild(d);
 }
+function add(cls, text) { const d = document.createElement('div'); d.className = 'm ' + cls; d.textContent = text; $('log').appendChild(d); $('log').scrollTop = 1e9; }
 function sys(text) { const d = document.createElement('div'); d.className = 'sys'; d.textContent = text; $('log').appendChild(d); $('log').scrollTop = 1e9; }
 
-$('find').onclick = () => api('/api/find').catch(e => sys(e.message));
-$('leave').onclick = async () => { try { await api('/api/leave'); sys('Вы завершили чат.'); setMode('ended'); } catch (e) { sys(e.message); } };
+$('stop').onclick = async () => { try { await api('/api/leave'); clearLog(); sys('Вы остановили чат. Нажмите «Следующий», чтобы искать дальше.'); setMode('ended'); } catch (e) { sys(e.message); } };
+$('next').onclick = async () => { try { if (mode === 'chat' || mode === 'waiting') await api('/api/leave'); await find(); } catch (e) { sys(e.message); } };
 $('report').onclick = async () => {
-  if (!confirm('Пожаловаться на собеседника? Чат будет завершён.')) return;
+  if ($('report').dataset.armed !== '1') {
+    $('report').dataset.armed = '1'; $('report').textContent = 'Точно?';
+    setTimeout(() => { $('report').dataset.armed = ''; $('report').textContent = 'Жалоба'; }, 3000); return;
+  }
+  $('report').dataset.armed = ''; $('report').textContent = 'Жалоба';
   try { await api('/api/report'); await api('/api/leave'); sys('Жалоба отправлена. Спасибо!'); setMode('ended'); } catch (e) { sys(e.message); }
 };
 $('form').onsubmit = async ev => {

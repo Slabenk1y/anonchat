@@ -25,6 +25,8 @@ pub struct User {
     last_seen: Instant,
     sent: VecDeque<Instant>,
     waiting: bool,
+    lang: String,
+    tags: Vec<String>,
 }
 
 #[derive(Default)]
@@ -99,6 +101,8 @@ impl State {
                 last_seen: now,
                 sent: VecDeque::new(),
                 waiting: false,
+                lang: String::new(),
+                tags: Vec::new(),
             },
         );
         Ok(id)
@@ -117,7 +121,9 @@ impl State {
         }
     }
 
-    pub fn find(&mut self, id: &str, now: Instant) -> Result<(), Err> {
+    /// Ищет собеседника с тем же языком; из подходящих выбирает того,
+    /// у кого больше общих интересов (при равенстве — кто ждёт дольше).
+    pub fn find(&mut self, id: &str, now: Instant, lang: &str, tags: &[String]) -> Result<(), Err> {
         let ip = {
             let u = self.users.get_mut(id).ok_or((404, "нет сессии"))?;
             u.last_seen = now;
@@ -127,23 +133,34 @@ impl State {
             if u.waiting {
                 return Ok(());
             }
+            u.lang = lang.to_string();
+            u.tags = tags.to_vec();
             u.ip
         };
         if self.is_banned(ip, now) {
             return Err((403, "вы заблокированы"));
         }
         let my_last = self.users[id].last_partner.as_ref().map(|p| p.0.clone());
-        let pos = self.queue.iter().position(|c| {
-            c != id
-                && Some(c) != my_last.as_ref()
-                && self.users.get(c).map_or(false, |cu| {
-                    cu.waiting
-                        && cu.partner.is_none()
-                        && cu.last_partner.as_ref().map(|p| p.0.as_str()) != Some(id)
-                })
-        });
-        match pos {
-            Some(p) => {
+        let mut best: Option<(usize, usize)> = None;
+        for (i, c) in self.queue.iter().enumerate() {
+            if c == id || Some(c) == my_last.as_ref() {
+                continue;
+            }
+            let Some(cu) = self.users.get(c) else { continue };
+            if !cu.waiting
+                || cu.partner.is_some()
+                || cu.lang != lang
+                || cu.last_partner.as_ref().map(|p| p.0.as_str()) == Some(id)
+            {
+                continue;
+            }
+            let score = cu.tags.iter().filter(|t| tags.contains(t)).count();
+            if best.map_or(true, |(_, s)| score > s) {
+                best = Some((i, score));
+            }
+        }
+        match best {
+            Some((p, _)) => {
                 let c = self.queue.remove(p).unwrap();
                 self.pair(id, &c);
             }
@@ -297,8 +314,8 @@ mod tests {
     fn two(s: &mut State, now: Instant) {
         s.join(ip(1), now, "a".into()).unwrap();
         s.join(ip(2), now, "b".into()).unwrap();
-        s.find("a", now).unwrap();
-        s.find("b", now).unwrap();
+        s.find("a", now, "ru", &[]).unwrap();
+        s.find("b", now, "ru", &[]).unwrap();
     }
 
     #[test]
@@ -330,12 +347,12 @@ mod tests {
         let (mut s, now) = (State::new(), Instant::now());
         two(&mut s, now);
         s.leave("a", now).unwrap();
-        s.find("a", now).unwrap();
-        s.find("b", now).unwrap();
+        s.find("a", now, "ru", &[]).unwrap();
+        s.find("b", now, "ru", &[]).unwrap();
         // оба ждут и не должны снова попасть друг к другу
         assert!(s.users["a"].waiting && s.users["b"].waiting);
         s.join(ip(3), now, "c".into()).unwrap();
-        s.find("c", now).unwrap();
+        s.find("c", now, "ru", &[]).unwrap();
         assert!(s.users["c"].partner.is_some());
     }
 
@@ -359,8 +376,8 @@ mod tests {
         s.join(ip(9), now, "bad".into()).unwrap();
         for (i, name) in [(1u8, "r1"), (2, "r2"), (3, "r3")] {
             s.join(ip(i), now, name.into()).unwrap();
-            s.find("bad", now).unwrap();
-            s.find(name, now).unwrap();
+            s.find("bad", now, "ru", &[]).unwrap();
+            s.find(name, now, "ru", &[]).unwrap();
             let banned = s.report(name, now).unwrap();
             assert_eq!(banned, i == 3);
             if i < 3 {
@@ -370,7 +387,7 @@ mod tests {
                 s.users.get_mut("bad").unwrap().last_partner = None;
             }
         }
-        assert_eq!(s.find("bad", now), Err((403, "вы заблокированы")));
+        assert_eq!(s.find("bad", now, "ru", &[]), Err((403, "вы заблокированы")));
         assert_eq!(s.join(ip(9), now, "new".into()), Err((403, "вы заблокированы")));
         // бан истекает
         s.join(ip(9), now + BAN_DURATION + Duration::from_secs(1), "new".into()).unwrap();
@@ -405,6 +422,40 @@ mod tests {
             s.join(ip(1), now, format!("u{i}")).unwrap();
         }
         assert_eq!(s.join(ip(1), now, "x".into()), Err((429, "слишком много сессий")));
+    }
+
+    #[test]
+    fn matches_only_same_language() {
+        let (mut s, now) = (State::new(), Instant::now());
+        s.join(ip(1), now, "ru1".into()).unwrap();
+        s.join(ip(2), now, "en1".into()).unwrap();
+        s.join(ip(3), now, "ru2".into()).unwrap();
+        s.find("ru1", now, "ru", &[]).unwrap();
+        s.find("en1", now, "en", &[]).unwrap();
+        assert!(s.users["ru1"].partner.is_none() && s.users["en1"].partner.is_none());
+        s.find("ru2", now, "ru", &[]).unwrap();
+        assert_eq!(s.users["ru2"].partner.as_deref(), Some("ru1"));
+    }
+
+    #[test]
+    fn prefers_shared_interests_but_falls_back() {
+        let (mut s, now) = (State::new(), Instant::now());
+        let t = |v: &[&str]| v.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        for (i, n) in ["a", "b", "c"].iter().enumerate() {
+            s.join(ip(i as u8 + 1), now, n.to_string()).unwrap();
+        }
+        s.find("a", now, "ru", &t(&["music"])).unwrap();
+        // b не должен сразу уйти к a: делаем вид, что они уже общались
+        s.users.get_mut("b").unwrap().last_partner = Some(("a".into(), ip(1)));
+        s.find("b", now, "ru", &t(&["games", "anime"])).unwrap();
+        assert!(s.users["b"].waiting);
+        s.join(ip(4), now, "d".into()).unwrap();
+        // d любит аниме: должен выбрать b, хотя a ждёт дольше
+        s.find("d", now, "ru", &t(&["anime"])).unwrap();
+        assert_eq!(s.users["d"].partner.as_deref(), Some("b"));
+        // c без общих интересов всё равно получает оставшегося
+        s.find("c", now, "ru", &t(&["sport"])).unwrap();
+        assert_eq!(s.users["c"].partner.as_deref(), Some("a"));
     }
 
     #[test]
