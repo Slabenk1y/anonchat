@@ -18,7 +18,7 @@ pub const MAX_SESSIONS_PER_IP: usize = 5;
 const MAX_QUEUED_EVENTS: usize = 200;
 
 pub const TOPICS: [&str; 1] = ["chat"];
-pub const CHAT_AGES: [&str; 5] = ["u17", "a18_21", "a22_25", "a26_35", "a36"];
+pub const CHAT_AGES: [&str; 5] = ["teen_13_17", "a18_21", "a22_25", "a26_35", "a36"];
 
 pub type Err = (u16, &'static str);
 
@@ -56,12 +56,12 @@ impl Prefs {
                 ages.push(a.to_string());
             }
         }
-        if age == "u17" {
+        if age == "teen_13_17" {
             // Несовершеннолетние общаются только друг с другом.
-            ages = vec!["u17".to_string()];
+            ages = vec!["teen_13_17".to_string()];
         } else {
             let had = !ages.is_empty();
-            ages.retain(|a| a != "u17");
+            ages.retain(|a| a != "teen_13_17");
             if had && ages.is_empty() {
                 return Err((400, "выберите возраст собеседника"));
             }
@@ -76,12 +76,12 @@ impl Prefs {
     }
 
     fn is_minor(&self) -> bool {
-        self.age == "u17"
+        self.age == "teen_13_17"
     }
 }
 
 /// Взаимная совместимость: тема, пол и возраст должны устраивать обе стороны.
-/// Жёсткое правило безопасности: до 17 лет и взрослые никогда не соединяются.
+/// Жёсткое правило безопасности: 13–17 лет и взрослые никогда не соединяются.
 pub fn compatible(a: &Prefs, b: &Prefs) -> bool {
     a.topic == b.topic
         && a.is_minor() == b.is_minor()
@@ -570,14 +570,14 @@ mod tests {
     #[test]
     fn minors_and_adults_never_match() {
         // подросток ищет «любой», взрослый тоже: всё равно не пара
-        assert!(!compatible(&pf("chat", "x", "any", "u17", ""), &pf("chat", "x", "any", "a18_21", "")));
-        // у подростка список возрастов всегда сводится к «до 17»
-        assert_eq!(pf("chat", "x", "any", "u17", "a18_21,a26_35").ages, vec!["u17"]);
-        // взрослый не может выбрать «до 17» в фильтре
-        assert_eq!(Prefs::parse("chat", "x", "any", "a22_25", "u17"), Err((400, "выберите возраст собеседника")));
-        assert_eq!(pf("chat", "x", "any", "a22_25", "u17,a18_21").ages, vec!["a18_21"]);
+        assert!(!compatible(&pf("chat", "x", "any", "teen_13_17", ""), &pf("chat", "x", "any", "a18_21", "")));
+        // у подростка список возрастов всегда сводится к «13–17»
+        assert_eq!(pf("chat", "x", "any", "teen_13_17", "a18_21,a26_35").ages, vec!["teen_13_17"]);
+        // взрослый не может выбрать «13–17» в фильтре
+        assert_eq!(Prefs::parse("chat", "x", "any", "a22_25", "teen_13_17"), Err((400, "выберите возраст собеседника")));
+        assert_eq!(pf("chat", "x", "any", "a22_25", "teen_13_17,a18_21").ages, vec!["a18_21"]);
         // два подростка соединяются
-        assert!(compatible(&pf("chat", "x", "any", "u17", ""), &pf("chat", "m", "any", "u17", "")));
+        assert!(compatible(&pf("chat", "x", "any", "teen_13_17", ""), &pf("chat", "m", "any", "teen_13_17", "")));
     }
 
     #[test]
@@ -585,16 +585,16 @@ mod tests {
         let (mut s, now) = (State::new(), Instant::now());
         s.join(ip(1), now, "teen-a".into()).unwrap();
         s.join(ip(2), now, "teen-b".into()).unwrap();
-        s.find("teen-a", now, pf("chat", "m", "f", "u17", "u17")).unwrap();
-        s.find_random("teen-b", now, pf("chat", "x", "any", "u17", "u17")).unwrap();
+        s.find("teen-a", now, pf("chat", "m", "f", "teen_13_17", "teen_13_17")).unwrap();
+        s.find_random("teen-b", now, pf("chat", "x", "any", "teen_13_17", "teen_13_17")).unwrap();
         assert!(s.users["teen-a"].partner.is_none(), "обычный поиск не смешивается с рандом-поиском");
-        s.find_random("teen-a", now, pf("chat", "m", "f", "u17", "u17")).unwrap();
+        s.find_random("teen-a", now, pf("chat", "m", "f", "teen_13_17", "teen_13_17")).unwrap();
         assert!(s.users["teen-a"].partner.is_some(), "рандом-режим может ослабить половые фильтры внутри своей возрастной группы");
 
         let mut s = State::new();
         s.join(ip(3), now, "teen".into()).unwrap();
         s.join(ip(4), now, "adult".into()).unwrap();
-        s.find_random("teen", now, pf("chat", "x", "any", "u17", "")).unwrap();
+        s.find_random("teen", now, pf("chat", "x", "any", "teen_13_17", "")).unwrap();
         s.find_random("adult", now, pf("chat", "x", "any", "a22_25", "")).unwrap();
         assert!(s.users["teen"].partner.is_none() && s.users["adult"].partner.is_none(),
             "рандом-поиск никогда не соединяет подростков со взрослыми");
@@ -602,11 +602,11 @@ mod tests {
 
     #[test]
     fn adult_topics_are_rejected_for_every_client() {
-        assert_eq!(Prefs::parse("flirt", "x", "any", "u17", ""), Err((400, "неизвестная тема")));
+        assert_eq!(Prefs::parse("flirt", "x", "any", "teen_13_17", ""), Err((400, "неизвестная тема")));
         assert_eq!(Prefs::parse("flirt", "m", "f", "a26_35", ""), Err((400, "неизвестная тема")));
         assert_eq!(Prefs::parse("rp", "x", "any", "a22_25", ""), Err((400, "неизвестная тема")));
         assert_eq!(Prefs::parse("sex", "x", "any", "a36", ""), Err((400, "неизвестная тема")));
-        assert!(Prefs::parse("chat", "x", "any", "u17", "u17").is_ok());
+        assert!(Prefs::parse("chat", "x", "any", "teen_13_17", "teen_13_17").is_ok());
         assert!(Prefs::parse("chat", "x", "any", "a22_25", "").is_ok());
     }
 
