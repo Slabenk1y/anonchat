@@ -481,8 +481,8 @@ mod tests {
     #[test]
     fn response_headers_are_well_formed_and_hardened() {
         let head = response_head(&Resp { status: 200, ctype: "text/plain", body: "ok".into() });
-        assert!(head.starts_with("HTTP/1.1 200 OK\\r\\n"));
-        assert!(head.ends_with("\\r\\n\\r\\n"));
+        assert!(head.starts_with("HTTP/1.1 200 OK\r\n"));
+        assert!(head.ends_with("\r\n\r\n"));
         assert!(head.contains("frame-ancestors 'none'"));
         assert!(head.contains("X-Frame-Options: DENY"));
         assert!(head.contains("Permissions-Policy: camera=(), microphone=(), geolocation=()"));
