@@ -304,88 +304,155 @@
   }
 
 
-  /* ---------- balanced, responsive one-screen menu ---------- */
-  html,body{width:100%;height:100%;height:100dvh;overflow:hidden}
-  body{min-height:0}
-  #menu{height:100%;min-height:0;overflow:hidden;padding:clamp(12px,2.2vh,22px) 18px}
-  #menu>.wrap{
-    width:min(940px,100%);height:100%;max-width:940px;min-height:0;margin:0 auto;
-    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-    grid-template-rows:auto auto auto auto minmax(0,1fr) auto auto auto;
-    grid-template-areas:"bar bar" "intro intro" "topics topics" "hint hint"
-      "you partner" "confirm confirm" "go go" "why why" "counter rules";
-    gap:clamp(6px,1.15vh,11px);align-content:stretch
+  /* ---------- NEKTO-INSPIRED INTERFACE ---------- */
+  :root{
+    color-scheme:light;
+    --bg:#f3f4fa;
+    --surface:#ffffff;
+    --surface2:#f5f6fb;
+    --line:#e2e5ef;
+    --text:#292d3b;
+    --muted:#858b9d;
+    --ink:#ffffff;
+    --brand:#6558d9;
+    --brand2:#8b82ed;
+    --topic:#6558d9;
+    --coral:#e56b78;
+    --me:#e9e7ff;
+    --them:#f0f2f7;
+    --glow:#ecebff;
+    --lime:#d8e6a4;
+    --shadow:0 10px 35px #30365b12;
   }
-  #menu>.wrap>.bar{grid-area:bar;min-height:42px;padding:0}
-  #menu>.wrap>.intro-card{grid-area:intro;min-height:112px;padding:16px 22px}
-  #menu>.wrap>.topics{grid-area:topics}
-  #menu>.wrap>.hint{grid-area:hint;min-height:0;margin:0;font-size:12px}
-  #menu>.wrap>section.panel[aria-label="Вы"]{grid-area:you;min-height:0;justify-content:center;padding:14px 16px}
-  #menu>.wrap>section.panel[aria-label="Собеседник"]{grid-area:partner;min-height:0;justify-content:center;padding:14px 16px}
-  #menu>.wrap>.confirm{grid-area:confirm;margin:0;padding:9px 12px}
-  #menu>.wrap>#go{grid-area:go;padding:13px 16px}
-  #menu>.wrap>.why{grid-area:why;min-height:0;margin:0}
-  #menu>.wrap>.counter{grid-area:counter;margin:0;padding:3px 0 0}
-  #menu>.wrap>.rules{grid-area:rules;align-self:center;text-align:right}
-  #menu .intro-card h1{font-size:clamp(25px,3.2vw,35px)}
-  #menu .intro-card .lead{font-size:13px}
-  #menu .topic{min-height:82px;padding:10px 8px}
-  #menu .topic svg{width:26px;height:26px}
-  #menu .topic b{font-size:13px}
-  #menu .topic small{font-size:11px}
-  #menu .panel{gap:10px}
-  #menu .panel .lab{font-size:12px;margin-bottom:5px}
-  #menu .seg button{padding:8px 5px;font-size:12px}
-  #menu .chips{gap:6px}
-  #menu .chip{padding:7px 10px;font-size:12px}
-  #menu .note{padding:7px 9px;font-size:11px}
-  #chat{height:100%;height:100dvh;min-height:0;overflow:hidden}
-  #log{min-height:0;overscroll-behavior:contain}
-  @media(max-width:620px){
-    #menu{padding:9px 10px}
-    #menu>.wrap{gap:6px;grid-template-rows:auto auto auto auto minmax(0,1fr) auto auto auto auto}
-    #menu>.wrap>.intro-card{min-height:92px;padding:11px 14px;border-radius:18px}
-    #menu .intro-card h1{font-size:clamp(22px,5.5vw,29px)}
-    #menu .intro-card .lead{font-size:11px;line-height:1.3;margin-top:6px}
-    #menu .eyebrow{font-size:9px;margin-bottom:6px}
-    #menu .intro-orbit{width:62px;height:62px;border-radius:20px}
-    #menu .intro-orbit svg{width:48px;height:48px}
-    #menu .topics{gap:6px}
-    #menu .topic{min-height:70px;padding:7px 4px;border-radius:14px;gap:3px}
-    #menu .topic svg{width:22px;height:22px}
-    #menu .topic b{font-size:11px}
-    #menu .topic small{font-size:10px}
-    #menu .hint{font-size:10px;line-height:1.25}
-    #menu .panel{padding:10px;gap:8px;border-radius:15px}
-    #menu .panel h2{font-size:10px;letter-spacing:.1em}
-    #menu .panel .lab{font-size:11px;margin-bottom:4px}
-    #menu .seg{gap:3px;padding:3px}
-    #menu .seg button{font-size:11px;padding:7px 2px}
-    #menu .chips{gap:4px}
-    #menu .chip{font-size:10px;padding:6px 7px;border-radius:9px}
-    #menu .note{font-size:9px;line-height:1.3;padding:6px 7px}
-    #menu>.wrap>.confirm{font-size:10px;line-height:1.3;padding:7px 9px;gap:8px}
-    #menu .confirm input{width:17px;height:17px}
-    #menu>.wrap>#go{font-size:14px;padding:10px;border-radius:13px}
-    #menu>.wrap>.why{font-size:10px}
-    #menu>.wrap>.counter{font-size:10px}
-    #menu>.wrap>.rules{font-size:10px}
-    #menu .rules summary{font-size:11px}
-    #chat{padding:7px 8px 9px;gap:7px}
-    .top{min-height:44px;padding:0 0 5px}
-    #log{border-radius:17px;padding:11px}
-    .search-screen{padding:15px 12px}
-    .search-art,.echo-mascot,.echo-mascot svg{height:clamp(110px,23vh,180px)}
-    .search-screen h2{font-size:20px}
-    #text{padding:11px 13px}
-    #sendBtn{width:45px;height:45px}
+  :root[data-theme=dark]{
+    color-scheme:dark;
+    --bg:#171923;--surface:#222635;--surface2:#2b3041;--line:#383e52;
+    --text:#f2f3fa;--muted:#a1a7bb;--ink:#fff;--brand:#9489ff;
+    --brand2:#b1aaff;--topic:#9489ff;--coral:#ff8492;
+    --me:#3b3760;--them:#2c3243;--glow:#302d50;
+    --shadow:0 12px 36px #0003;
   }
-  /* Extremely short windows: preserve readable controls instead of clipping them. */
-  @media(max-height:650px){
-    html,body{height:auto;min-height:100%;overflow-y:auto}
-    #menu{height:auto;min-height:100dvh;overflow:visible}
-    #menu>.wrap{height:auto;min-height:calc(100dvh - 24px);grid-template-rows:auto auto auto auto auto auto auto auto auto}
-    #menu>.wrap>section.panel{min-height:150px}
+  html,body{width:100%;min-height:100%;height:auto;overflow-x:hidden;overflow-y:auto}
+  body{min-height:100dvh;background:var(--bg);background-image:linear-gradient(180deg,color-mix(in srgb,var(--brand) 7%,var(--bg)),var(--bg) 340px);letter-spacing:0}
+  #menu{min-height:100dvh;height:auto;overflow:visible;padding:22px 18px 38px;background:transparent}
+  #menu>.wrap{width:min(680px,100%);max-width:680px;height:auto;min-height:0;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  .bar{min-height:54px;padding:0 2px 12px;border-bottom:1px solid var(--line);gap:10px}
+  .bar .logo{width:36px;height:36px;filter:none}
+  .bar b{font-size:23px;font-weight:800;letter-spacing:-.045em;color:var(--text)}
+  .iconbtn{width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:none}
+  .iconbtn:hover{transform:none;border-color:var(--brand);background:var(--surface2)}
+  .intro-card{min-height:0;padding:14px 4px 9px;border:0;border-radius:0;background:transparent;box-shadow:none;display:block;text-align:center}
+  .intro-copy{max-width:none}
+  .eyebrow{font-size:10px;letter-spacing:.16em;margin-bottom:8px;color:var(--brand)}
+  .intro-card h1{font-size:clamp(27px,5vw,35px);line-height:1.14;letter-spacing:-.045em;font-weight:800;color:var(--text)}
+  .intro-card h1 span{color:var(--brand)}
+  .intro-card .lead{max-width:470px;margin:9px auto 0;font-size:14px;line-height:1.5;color:var(--muted)}
+  .intro-orbit{display:none}
+  .topics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow)}
+  .topic{min-height:64px;padding:10px 8px;border:1px solid transparent;border-radius:11px;background:transparent;box-shadow:none;gap:3px}
+  .topic svg{width:22px;height:22px}
+  .topic b{font-size:13px;font-weight:750}
+  .topic small{font-size:10px;color:var(--muted)}
+  .topic[aria-pressed=true]{background:var(--glow);border-color:color-mix(in srgb,var(--brand) 24%,var(--line));box-shadow:none}
+  .topic[aria-pressed=true] small{color:var(--brand)}
+  .topic:hover{transform:none;background:var(--surface2)}
+  .hint{margin:-6px 2px 0;min-height:1.4em;font-size:12px;text-align:center;color:var(--muted)}
+  .panel{padding:19px 20px;gap:15px;border-radius:16px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+  .panel h2{font-size:12px;letter-spacing:.04em;text-transform:none;color:var(--text);font-weight:800;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .panel h2 em{font-size:11px;color:var(--muted);font-weight:500}
+  .lab{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:7px}
+  .seg{gap:5px;padding:4px;border-radius:11px;background:var(--surface2);border:1px solid var(--line)}
+  .seg button{padding:9px 8px;border-radius:8px;font-size:13px;font-weight:650}
+  .seg button[aria-pressed=true]{background:var(--brand);color:#fff;box-shadow:none}
+  .chips{gap:7px}
+  .chip{padding:8px 12px;border-radius:10px;background:var(--surface2);border-color:var(--line);font-size:12px;font-weight:650}
+  .chip[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:#fff}
+  .note{border-radius:11px;padding:10px 12px;font-size:12px;line-height:1.45;background:var(--surface2)}
+  .confirm{border-radius:13px;padding:13px 14px;font-size:12px;background:var(--surface);border:1px solid var(--line);box-shadow:none}
+  .confirm input{accent-color:var(--brand)}
+  .cta{padding:15px 18px;border-radius:12px;background:var(--brand);color:#fff;font-size:15px;font-weight:800;letter-spacing:0;box-shadow:0 5px 14px color-mix(in srgb,var(--brand) 22%,transparent)}
+  .cta:hover:not(:disabled){filter:brightness(1.06);transform:translateY(-1px)}
+  .cta:disabled{opacity:.45;box-shadow:none}
+  .why{margin:-5px 0 0;font-size:12px;color:var(--muted)}
+  .counter{padding:12px 0 0;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+  .counter b{font-size:20px;color:var(--brand)}
+  .rules{padding:13px 15px;border:1px solid var(--line);border-radius:13px;background:var(--surface);font-size:12px;color:var(--muted)}
+  .rules summary{font-size:13px;font-weight:700;color:var(--text)}
+  .rules ul{line-height:1.65}
+  .settings-panel{border-radius:18px;box-shadow:var(--shadow)}
+  .settings-heading h2{font-size:20px;letter-spacing:-.03em}
+  .settings-heading button{border-radius:10px;background:var(--surface2)}
+  .settings-panel .settings-body{gap:4px}
+  .setting{padding:13px 2px;border-bottom:1px solid var(--line);font-size:13px}
+  .setting:last-child{border-bottom:0}
+  .setting small{font-size:11px}
+  .switch input:checked+span{background:var(--brand)}
+  /* Chat: clean, centered conversation workspace */
+  #chat{width:min(900px,100%);height:100dvh;min-height:480px;max-width:900px;padding:12px 16px 16px;gap:10px}
+  .top{min-height:54px;padding:2px 0 9px;border-bottom:1px solid var(--line)}
+  .back{width:40px;height:40px;border-radius:12px;background:var(--surface);box-shadow:none}
+  .pill{padding:5px 10px;border-radius:9px;background:var(--surface);font-size:11px;font-weight:700}
+  .pill.t{color:var(--brand);border-color:color-mix(in srgb,var(--brand) 35%,var(--line))}
+  .stat{font-size:12px}
+  .dot.on{background:#42b883}
+  #log{border-radius:16px;padding:16px;background:var(--surface);box-shadow:none}
+  .m{padding:10px 14px;border-radius:15px;font-size:14px;line-height:1.5}
+  .me{background:var(--me);border-bottom-right-radius:5px}
+  .them{background:var(--them);border-bottom-left-radius:5px}
+  .sys{font-size:11px;padding:6px 11px;background:var(--surface2);border-radius:8px}
+  .search-screen{border-radius:16px;padding:22px;background:var(--surface);box-shadow:var(--shadow)}
+  .search-screen h2{font-size:22px;letter-spacing:-.035em;font-weight:800}
+  .search-art{height:190px}
+  .echo-mascot{height:190px}
+  .echo-mascot svg{height:190px}
+  .echo-body,.echo-ear{fill:var(--brand);stroke:var(--brand)}
+  .echo-tail,.echo-arm{stroke:var(--brand)}
+  .echo-ripple{stroke:var(--brand)}
+  #cancelSearch,#randomSearch{border-radius:10px;padding:10px 15px;font-size:13px;font-weight:700}
+  #cancelSearch{background:var(--surface2)}
+  #randomSearch{background:var(--glow);border-color:var(--brand)}
+  .chat-menu summary{border-radius:11px;background:var(--surface);width:38px;height:38px}
+  .chat-menu .menu-items{border-radius:13px;box-shadow:var(--shadow)}
+  .chat-menu button{border-radius:9px;font-size:12px}
+  #stickerBtn{border-radius:10px;padding:9px 12px}
+  #stickers{border-radius:13px}
+  #stickers button{border-radius:9px}
+  #text{border-radius:12px;background:var(--surface);border-color:var(--line);padding:13px 15px;font-size:14px}
+  #sendBtn{width:48px;height:48px;border-radius:12px;background:var(--brand);color:#fff}
+  @media(max-width:560px){
+    #menu{padding:12px 12px 26px}
+    #menu>.wrap{gap:11px}
+    .bar{min-height:46px;padding-bottom:8px}
+    .bar .logo{width:32px;height:32px}
+    .bar b{font-size:21px}
+    .intro-card{padding:8px 2px 5px}
+    .intro-card h1{font-size:28px}
+    .intro-card .lead{font-size:12px}
+    .topic{min-height:58px;padding:8px 4px}
+    .topic svg{width:20px;height:20px}
+    .topic b{font-size:11px}
+    .topic small{font-size:9px}
+    .panel{padding:15px 14px;gap:13px;border-radius:14px}
+    .panel h2{padding-bottom:8px}
+    .seg button{font-size:12px;padding:9px 4px}
+    .chip{font-size:11px;padding:7px 9px}
+    .note{font-size:11px}
+    #chat{min-height:420px;padding:7px 9px 10px;gap:7px}
+    .top{min-height:45px;gap:6px}
+    .pill{font-size:10px;padding:4px 7px}
+    #log{padding:11px;border-radius:13px}
+    .search-screen{padding:16px 12px}
+    .search-art,.echo-mascot,.echo-mascot svg{height:clamp(105px,22vh,165px)}
+    .search-screen h2{font-size:19px}
+    #text{padding:11px 12px}
+    #sendBtn{width:44px;height:44px}
+  }
+  @media(max-height:560px) and (min-width:561px){
+    #menu{padding-top:12px}
+    #menu>.wrap{gap:9px}
+    .intro-card{padding:4px 0}
+    .intro-card h1{font-size:25px}
+    .panel{padding:13px 16px}
   }
 
 </style>
