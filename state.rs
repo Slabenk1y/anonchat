@@ -101,6 +101,7 @@ pub struct User {
     last_seen: Instant,
     sent: VecDeque<Instant>,
     waiting: bool,
+    random_search: bool,
     prefs: Option<Prefs>,
 }
 
@@ -181,6 +182,7 @@ impl State {
                 last_seen: now,
                 sent: VecDeque::new(),
                 waiting: false,
+                random_search: false,
                 prefs: None,
             },
         );
@@ -217,6 +219,14 @@ impl State {
     }
 
     pub fn find(&mut self, id: &str, now: Instant, prefs: Prefs) -> Result<(), Err> {
+        self.find_mode(id, now, prefs, false)
+    }
+
+    pub fn find_random(&mut self, id: &str, now: Instant, prefs: Prefs) -> Result<(), Err> {
+        self.find_mode(id, now, prefs, true)
+    }
+
+    fn find_mode(&mut self, id: &str, now: Instant, prefs: Prefs, random: bool) -> Result<(), Err> {
         let ip = {
             let u = self.users.get_mut(id).ok_or((404, "нет сессии"))?;
             u.last_seen = now;
@@ -224,11 +234,13 @@ impl State {
                 return Err((409, "вы уже в чате"));
             }
             if u.waiting {
-                // Уже ищем: просто обновим параметры, место в очереди сохраняется.
+                // Уже ищем: обновляем фильтры и режим, не меняя место в очереди.
                 u.prefs = Some(prefs);
+                u.random_search = random;
                 return Ok(());
             }
             u.prefs = Some(prefs.clone());
+            u.random_search = random;
             u.ip
         };
         if self.is_banned(ip, now) {
@@ -242,9 +254,16 @@ impl State {
             let Some(cu) = self.users.get(c) else { return false };
             cu.waiting
                 && cu.partner.is_none()
+                && cu.random_search == random
                 && now.duration_since(cu.last_seen) < FRESH_FOR_MATCH
                 && cu.last_partner.as_ref().map(|p| p.0.as_str()) != Some(id)
-                && cu.prefs.as_ref().map_or(false, |cp| compatible(&prefs, cp))
+                && cu.prefs.as_ref().map_or(false, |cp| {
+                    if random {
+                        cp.topic == prefs.topic && cp.is_minor() == prefs.is_minor()
+                    } else {
+                        compatible(&prefs, cp)
+                    }
+                })
         });
         match pos {
             Some(p) => {
@@ -562,6 +581,26 @@ mod tests {
         assert_eq!(pf("chat", "x", "any", "a22_25", "u17,a18_21").ages, vec!["a18_21"]);
         // два подростка соединяются
         assert!(compatible(&pf("chat", "x", "any", "u17", ""), &pf("chat", "m", "any", "u17", "")));
+    }
+
+    #[test]
+    fn random_search_requires_opt_in_and_keeps_age_boundary() {
+        let (mut s, now) = (State::new(), Instant::now());
+        s.join(ip(1), now, "teen-a".into()).unwrap();
+        s.join(ip(2), now, "teen-b".into()).unwrap();
+        s.find("teen-a", now, pf("chat", "m", "f", "u17", "u17")).unwrap();
+        s.find_random("teen-b", now, pf("chat", "x", "any", "u17", "u17")).unwrap();
+        assert!(s.users["teen-a"].partner.is_none(), "обычный поиск не смешивается с рандом-поиском");
+        s.find_random("teen-a", now, pf("chat", "m", "f", "u17", "u17")).unwrap();
+        assert!(s.users["teen-a"].partner.is_some(), "рандом-режим может ослабить половые фильтры внутри своей возрастной группы");
+
+        let mut s = State::new();
+        s.join(ip(3), now, "teen".into()).unwrap();
+        s.join(ip(4), now, "adult".into()).unwrap();
+        s.find_random("teen", now, pf("chat", "x", "any", "u17", "")).unwrap();
+        s.find_random("adult", now, pf("chat", "x", "any", "a22_25", "")).unwrap();
+        assert!(s.users["teen"].partner.is_none() && s.users["adult"].partner.is_none(),
+            "рандом-поиск никогда не соединяет подростков со взрослыми");
     }
 
     #[test]
