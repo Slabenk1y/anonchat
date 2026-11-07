@@ -41,6 +41,8 @@ struct Req {
     origin: Option<String>,
     ws_key: Option<String>,
     upgrade_ws: bool,
+    connection_upgrade: bool,
+    ws_version_13: bool,
 }
 
 struct Resp {
@@ -57,7 +59,7 @@ fn err_resp(code: u16, msg: &str) -> Resp {
     json(code, format!("{{\"error\":{}}}", json_str(msg)))
 }
 
-/// Случайный 128-битный идентификатор. RandomState берёт ключи у ОС.
+/// Непредсказуемый внутренний идентификатор сессии; это не токен авторизации.
 fn new_id() -> String {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let mut out = String::new();
@@ -106,7 +108,7 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
     let target = parts.next()?;
     let path = target.split('?').next().unwrap_or("/").to_string();
     let (mut host, mut origin, mut ws_key, mut xff) = (None, None, None, None);
-    let mut upgrade_ws = false;
+    let (mut upgrade_ws, mut connection_upgrade, mut ws_version_13) = (false, false, false);
     loop {
         let mut h = String::new();
         if rd.read_line(&mut h).ok()? == 0 {
@@ -124,12 +126,16 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
                 "sec-websocket-key" => ws_key = Some(v),
                 "x-forwarded-for" => xff = Some(v),
                 "upgrade" => upgrade_ws = v.eq_ignore_ascii_case("websocket"),
+                "connection" => {
+                    connection_upgrade = v.split(',').any(|token| token.trim().eq_ignore_ascii_case("upgrade"));
+                }
+                "sec-websocket-version" => ws_version_13 = v == "13",
                 _ => {}
             }
         }
     }
     let ip = client_ip(peer, xff.as_deref(), proxy_hops());
-    Some(Req { method, path, ip, host, origin, ws_key, upgrade_ws })
+    Some(Req { method, path, ip, host, origin, ws_key, upgrade_ws, connection_upgrade, ws_version_13 })
 }
 
 fn write_response(mut s: &TcpStream, r: &Resp) {
@@ -236,11 +242,17 @@ fn writer_loop(sh: Arc<Shared>, w: Writer, id: String, done: Arc<AtomicBool>) {
         for e in events {
             if !send_frame(&w, 1, e.as_bytes()) {
                 done.store(true, Ordering::SeqCst);
+                let g = w.lock().unwrap_or_else(|e| e.into_inner());
+                let _ = g.shutdown(Shutdown::Both);
+                sh.cv.notify_all();
                 return;
             }
         }
         if beat && !(send_frame(&w, 9, b"") && send_frame(&w, 1, b"{\"t\":\"hb\"}")) {
             done.store(true, Ordering::SeqCst);
+            let g = w.lock().unwrap_or_else(|e| e.into_inner());
+            let _ = g.shutdown(Shutdown::Both);
+            sh.cv.notify_all();
             return;
         }
     }
@@ -297,6 +309,12 @@ fn ws_session(sh: Arc<Shared>, stream: TcpStream, ip: IpAddr, key: &str) {
     let _ = stream.shutdown(Shutdown::Both);
 }
 
+fn valid_ws_key(key: &str) -> bool {
+    key.len() == 24
+        && key.ends_with("==")
+        && key[..22].bytes().all(|b| b.is_ascii_alphanumeric() || b == b'+' || b == b'/')
+}
+
 fn handle(sh: Arc<Shared>, stream: TcpStream) {
     let _ = stream.set_read_timeout(Some(Duration::from_secs(10)));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(10)));
@@ -308,13 +326,17 @@ fn handle(sh: Arc<Shared>, stream: TcpStream) {
         write_response(&stream, &err_resp(400, "плохой запрос"));
         return;
     };
-    if req.path == "/ws" && req.upgrade_ws {
+    if req.path == "/ws" {
+        if req.method != "GET" || !req.upgrade_ws || !req.connection_upgrade || !req.ws_version_13 {
+            write_response(&stream, &err_resp(400, "неверное рукопожатие WebSocket"));
+            return;
+        }
         if !origin_ok(req.origin.as_deref(), req.host.as_deref()) {
             write_response(&stream, &err_resp(403, "чужой источник"));
             return;
         }
         match req.ws_key.as_deref() {
-            Some(k) if k.len() == 24 => ws_session(sh, stream, req.ip, k),
+            Some(k) if valid_ws_key(k) => ws_session(sh, stream, req.ip, k),
             _ => write_response(&stream, &err_resp(400, "нет ключа WebSocket")),
         }
         return;
