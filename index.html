@@ -400,6 +400,17 @@
   .rules{padding:10px 13px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:11px;color:var(--muted)}
   .rules summary{font-size:12px;font-weight:700;color:var(--text)}
   .rules ul{line-height:1.6}
+  .theme-row{
+    grid-area:theme;display:flex;align-items:center;justify-content:center;gap:14px;
+    padding:10px 14px;background:var(--surface);border:1px solid var(--line);
+    border-radius:9px;box-shadow:var(--shadow);font-size:13px;font-weight:700
+  }
+  .theme-options{display:flex;gap:6px}
+  .theme-choice{
+    min-height:34px;padding:6px 14px;border:1px solid var(--line);border-radius:7px;
+    background:var(--surface2);color:var(--text);font-size:12px;font-weight:700
+  }
+  .theme-choice[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:#fff}
   .settings-panel{border-radius:12px;box-shadow:var(--shadow)}
   .settings-heading h2{font-size:19px;letter-spacing:-.02em}
   .settings-heading button{border-radius:8px;background:var(--surface2)}
@@ -441,12 +452,14 @@
   #sendBtn{width:45px;height:45px;border-radius:9px;background:#55b86a;color:#fff}
   @media(min-width:700px){
     #menu>.wrap{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:
-      "bar bar" "topics topics" "hint hint" "you partner" "confirm confirm" "go go" "why why" "counter counter" "rules rules";gap:10px}
+      "bar bar" "topics topics" "hint hint" "you partner" "theme theme" "confirm confirm" "go go" "why why" "counter counter" "rules rules";gap:10px}
     #menu>.wrap>.bar{grid-area:bar}
     #menu>.wrap>.topics{grid-area:topics}
     #menu>.wrap>.hint{grid-area:hint}
     #menu>.wrap>section.panel[aria-label="Вы"]{grid-area:you}
     #menu>.wrap>section.panel[aria-label="Собеседник"]{grid-area:partner}
+    #menu>.wrap>.theme-row{grid-area:theme}
+    #menu>.wrap>.theme-row{grid-area:theme}
     #menu>.wrap>.confirm{grid-area:confirm}
     #menu>.wrap>#go{grid-area:go}
     #menu>.wrap>.why{grid-area:why}
@@ -509,10 +522,6 @@
     <svg class="logo" role="img" aria-label="Логотип Эхо"><use href="#logo"/></svg>
     <b>Эхо</b>
     <button class="iconbtn" id="settingsBtn" type="button" aria-label="Настройки" title="Настройки"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V20h-2.4v-.21a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-1.7-1.7.06-.06A1.7 1.7 0 0 0 8.52 15a1.7 1.7 0 0 0-1.55-1H6v-2.4h.97a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.7-1.7.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-1.55V5h2.4v.81a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.7 1.7-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.55 1H22v2.4h-1.05a1.7 1.7 0 0 0-1.55 1.6z"/></svg></button>
-    <button class="iconbtn" id="themeBtn" type="button" aria-label="Сменить цветовую схему">
-      <svg class="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
-      <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-    </button>
   </div>
   <div class="settings-overlay" id="settingsOverlay" hidden>
     <button class="settings-backdrop" id="settingsBackdrop" aria-label="Закрыть настройки" type="button"></button>
@@ -552,6 +561,14 @@
       </div></div>
     <div><div class="lab">Ваш возраст</div><div class="chips" id="age"></div></div>
   </section>
+
+  <div class="theme-row" aria-label="Тема оформления">
+    <span>Тема оформления</span>
+    <div class="theme-options">
+      <button class="theme-choice" id="lightThemeBtn" type="button" aria-pressed="false">Светлая</button>
+      <button class="theme-choice" id="darkThemeBtn" type="button" aria-pressed="false">Тёмная</button>
+    </div>
+  </div>
 
   <section class="panel" aria-label="Собеседник">
     <h2><span>Собеседник</span><em id="agesNote">можно несколько</em></h2>
@@ -737,7 +754,13 @@ document.querySelectorAll('.topic').forEach(b => b.onclick = () => { sel.topic =
 document.querySelectorAll('#gender button').forEach(b => b.onclick = () => { sel.gender = b.dataset.v; save(); renderMenu(); });
 document.querySelectorAll('#seek button').forEach(b => b.onclick = () => { sel.seek = b.dataset.v; save(); renderMenu(); });
 $('confirm').onchange = renderMenu;
-$('themeBtn').onclick = () => { sel.theme = sel.theme === 'light' ? 'dark' : 'light'; save(); renderMenu(); };
+function setTheme(theme) {
+  sel.theme = theme;
+  save();
+  renderMenu();
+}
+$('lightThemeBtn').onclick = () => setTheme('light');
+$('darkThemeBtn').onclick = () => setTheme('dark');
 renderMenu();
 initSettings();
 
