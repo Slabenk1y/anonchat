@@ -82,6 +82,13 @@ pub fn read_frame<R: Read>(r: &mut R, max: usize) -> io::Result<Frame> {
     if h[0] & 0x70 != 0 || !fin && opcode < 8 {
         return Err(bad("фрагментация не поддерживается"));
     }
+    if !matches!(opcode, 1 | 8 | 9 | 10) {
+        return Err(bad("неподдерживаемый тип кадра"));
+    }
+    let control = opcode >= 8;
+    if control && (!fin || (h[1] & 0x7f) > 125) {
+        return Err(bad("неверный управляющий кадр"));
+    }
     if h[1] & 0x80 == 0 {
         return Err(bad("кадр не замаскирован"));
     }
@@ -89,12 +96,20 @@ pub fn read_frame<R: Read>(r: &mut R, max: usize) -> io::Result<Frame> {
         126 => {
             let mut b = [0u8; 2];
             r.read_exact(&mut b)?;
-            u16::from_be_bytes(b) as usize
+            let n = u16::from_be_bytes(b) as usize;
+            if n < 126 {
+                return Err(bad("не минимальная длина кадра"));
+            }
+            n
         }
         127 => {
             let mut b = [0u8; 8];
             r.read_exact(&mut b)?;
-            u64::from_be_bytes(b) as usize
+            let n = u64::from_be_bytes(b);
+            if n & (1u64 << 63) != 0 || n <= 0xffff {
+                return Err(bad("неверная длина кадра"));
+            }
+            usize::try_from(n).map_err(|_| bad("кадр слишком большой"))?
         }
         n => n as usize,
     };
@@ -110,6 +125,7 @@ pub fn read_frame<R: Read>(r: &mut R, max: usize) -> io::Result<Frame> {
     }
     match opcode {
         1 => String::from_utf8(payload).map(Frame::Text).map_err(|_| bad("не UTF-8")),
+        8 if payload.len() == 1 => Err(bad("неверный close-кадр")),
         8 => Ok(Frame::Close),
         9 => Ok(Frame::Ping(payload)),
         10 => Ok(Frame::Pong),
@@ -187,6 +203,24 @@ mod tests {
         let mut frag = masked(1, b"hi");
         frag[0] &= 0x7f; // FIN=0
         assert!(read_frame(&mut &frag[..], 4096).is_err());
+    }
+
+    #[test]
+    #[test]
+    fn rejects_invalid_control_frames_and_reserved_opcodes() {
+        // Ping must be final and no longer than 125 bytes.
+        let mut ping = masked(9, b"ok");
+        ping[0] &= 0x7f;
+        assert!(read_frame(&mut &ping[..], 4096).is_err());
+
+        let long_ping = masked(9, &vec![b'x'; 126]);
+        assert!(read_frame(&mut &long_ping[..], 4096).is_err());
+
+        let reserved = masked(3, b"x");
+        assert!(read_frame(&mut &reserved[..], 4096).is_err());
+
+        let bad_close = masked(8, b"x");
+        assert!(read_frame(&mut &bad_close[..], 4096).is_err());
     }
 
     #[test]
