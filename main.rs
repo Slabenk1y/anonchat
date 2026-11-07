@@ -310,9 +310,10 @@ fn ws_session(sh: Arc<Shared>, stream: TcpStream, ip: IpAddr, key: &str) {
 }
 
 fn valid_ws_key(key: &str) -> bool {
-    key.len() == 24
-        && key.ends_with("==")
-        && key[..22].bytes().all(|b| b.is_ascii_alphanumeric() || b == b'+' || b == b'/')
+    let bytes = key.as_bytes();
+    bytes.len() == 24
+        && bytes[22..] == *b"=="
+        && bytes[..22].iter().all(|b| b.is_ascii_alphanumeric() || *b == b'+' || *b == b'/')
 }
 
 fn handle(sh: Arc<Shared>, stream: TcpStream) {
