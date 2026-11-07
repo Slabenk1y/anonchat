@@ -17,9 +17,8 @@ pub const BAN_DURATION: Duration = Duration::from_secs(3600);
 pub const MAX_SESSIONS_PER_IP: usize = 5;
 const MAX_QUEUED_EVENTS: usize = 200;
 
-pub const TOPICS: [&str; 3] = ["chat", "flirt", "rp"];
+pub const TOPICS: [&str; 1] = ["chat"];
 pub const CHAT_AGES: [&str; 5] = ["u17", "a18_21", "a22_25", "a26_35", "a36"];
-pub const ADULT_AGES: [&str; 3] = ["a18_25", "a26_35", "a36"];
 
 pub type Err = (u16, &'static str);
 
@@ -41,7 +40,7 @@ impl Prefs {
         if !TOPICS.contains(&topic) {
             return Err((400, "неизвестная тема"));
         }
-        let allowed: &[&str] = if topic == "chat" { &CHAT_AGES } else { &ADULT_AGES };
+        let allowed: &[&str] = &CHAT_AGES;
         if !allowed.contains(&age) {
             return Err((400, "выберите свой возраст"));
         }
@@ -602,19 +601,20 @@ mod tests {
     }
 
     #[test]
-    fn adult_topics_reject_minors() {
-        assert_eq!(Prefs::parse("flirt", "x", "any", "u17", ""), Err((400, "выберите свой возраст")));
-        assert_eq!(Prefs::parse("rp", "x", "any", "a18_21", ""), Err((400, "выберите свой возраст")));
-        assert!(Prefs::parse("flirt", "m", "f", "a18_25", "a18_25,a26_35").is_ok());
-        assert_eq!(Prefs::parse("flirt", "m", "f", "a18_25", "u17"), Err((400, "неверный возраст собеседника")));
+    fn adult_topics_are_rejected_for_every_client() {
+        assert_eq!(Prefs::parse("flirt", "x", "any", "u17", ""), Err((400, "неизвестная тема")));
+        assert_eq!(Prefs::parse("flirt", "m", "f", "a26_35", ""), Err((400, "неизвестная тема")));
+        assert_eq!(Prefs::parse("rp", "x", "any", "a22_25", ""), Err((400, "неизвестная тема")));
         assert_eq!(Prefs::parse("sex", "x", "any", "a36", ""), Err((400, "неизвестная тема")));
+        assert!(Prefs::parse("chat", "x", "any", "u17", "u17").is_ok());
+        assert!(Prefs::parse("chat", "x", "any", "a22_25", "").is_ok());
     }
 
     #[test]
-    fn topics_stay_separate() {
-        assert!(!compatible(&pf("flirt", "x", "any", "a26_35", ""), &pf("rp", "x", "any", "a26_35", "")));
-        assert!(!compatible(&pf("chat", "x", "any", "a26_35", ""), &pf("rp", "x", "any", "a26_35", "")));
-        assert!(compatible(&pf("rp", "x", "any", "a26_35", ""), &pf("rp", "f", "any", "a36", "")));
+    fn only_supported_topic_can_match() {
+        let a = pf("chat", "x", "any", "a26_35", "");
+        let b = pf("chat", "f", "any", "a36", "");
+        assert!(compatible(&a, &b));
     }
 
     #[test]
