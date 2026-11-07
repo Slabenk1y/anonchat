@@ -104,11 +104,18 @@
   .ring i:nth-child(2){animation-delay:.66s}.ring i:nth-child(3){animation-delay:1.33s}
   @keyframes ring{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.4);opacity:0}}
   #typing{height:22px;color:var(--muted);font-size:13px;padding:2px 8px}
-  .acts{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;margin-bottom:8px}
-  .acts button{padding:12px 6px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-weight:600}
-  .acts .next{background:var(--topic);border-color:var(--topic);color:var(--ink);font-weight:800}
-  .acts .rep{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 45%,var(--line));background:transparent}
-  .acts button:disabled{opacity:.4;cursor:not-allowed}
+  .chat-menu{position:relative;flex:none}
+  .chat-menu summary{list-style:none;width:36px;height:36px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:22px;cursor:pointer}
+  .chat-menu summary::-webkit-details-marker{display:none}
+  .chat-menu .menu-items{position:absolute;right:0;top:42px;z-index:5;display:grid;gap:6px;min-width:132px;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 28px #0003}
+  .chat-menu button{padding:9px 12px;text-align:left;border:1px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--text);font-weight:600}
+  .chat-menu .rep{color:var(--coral)}
+  .chat-menu button:disabled{opacity:.4}
+  .sticker-row{display:flex;gap:6px;align-items:center;margin-bottom:7px}
+  #stickerBtn{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:12px;padding:8px 11px}
+  #stickers{display:flex;flex-wrap:wrap;gap:6px;padding:8px;margin-bottom:7px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+  #stickers[hidden]{display:none}
+  #stickers button{font-size:23px;min-width:42px;padding:5px;border:1px solid var(--line);border-radius:10px;background:var(--surface2)}
   form{display:flex;gap:8px}
   #text{flex:1;min-width:0;padding:14px 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:16px}
   #sendBtn{width:52px;border:0;border-radius:50%;background:var(--topic);color:var(--ink);display:grid;place-items:center;flex:none}
@@ -199,14 +206,25 @@
     <button class="back" id="back" type="button" aria-label="В меню"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
     <span class="pill t" id="topicPill"></span><span class="pill p" id="partnerPill" hidden></span>
     <span class="stat"><span class="dot" id="dot"></span><span id="statusText">…</span></span>
+    <details class="chat-menu" id="chatMenu">
+      <summary aria-label="Действия чата">⋯</summary>
+      <div class="menu-items">
+        <button id="stop" type="button">Стоп</button>
+        <button id="next" type="button">Следующий</button>
+        <button id="report" class="rep" type="button">Жалоба</button>
+      </div>
+    </details>
   </div>
   <div id="log" aria-live="polite"></div>
   <div id="typing"></div>
-  <div class="acts">
-    <button id="stop" type="button">Стоп</button>
-    <button id="next" class="next" type="button">Следующий</button>
-    <button id="report" class="rep" type="button">Жалоба</button>
+  <div id="stickers" hidden aria-label="Стикеры">
+    <button type="button" data-sticker="👋">👋</button><button type="button" data-sticker="😊">😊</button>
+    <button type="button" data-sticker="😂">😂</button><button type="button" data-sticker="❤️">❤️</button>
+    <button type="button" data-sticker="✨">✨</button><button type="button" data-sticker="👍">👍</button>
+    <button type="button" data-sticker="🎉">🎉</button><button type="button" data-sticker="🐱">🐱</button>
+    <button type="button" data-sticker="🌈">🌈</button><button type="button" data-sticker="🤝">🤝</button>
   </div>
+  <div class="sticker-row"><button id="stickerBtn" type="button" disabled>☺ Стикеры</button></div>
   <form id="form">
     <input id="text" type="text" maxlength="500" autocomplete="off" placeholder="Сообщение…" disabled>
     <button id="sendBtn" aria-label="Отправить" disabled><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -328,6 +346,7 @@ function connect() {
 const open = () => ws && ws.readyState === 1;
 function cmd(...parts) { if (open()) { ws.send(parts.join('\t')); return true; } return false; }
 const findCmd = () => cmd('find', sel.topic, sel.gender, sel.seek, sel.age, sel.ages.join(','));
+const randomFindCmd = () => cmd('random', sel.topic, sel.gender, sel.seek, sel.age, sel.ages.join(','));
 
 async function startSearch() {
   clearLog(); setMode('connecting');
@@ -371,6 +390,8 @@ function setMode(m) {
   mode = m;
   const chat = m === 'chat';
   $('text').disabled = $('sendBtn').disabled = !chat;
+  $('stickerBtn').disabled = !chat;
+  if (!chat) { $('stickers').hidden = true; $('chatMenu').open = false; }
   $('stop').disabled = !(chat || m === 'waiting');
   $('next').disabled = m === 'banned' || m === 'connecting';
   $('report').disabled = !(chat || m === 'ended');
@@ -383,10 +404,14 @@ function clearLog() { $('log').replaceChildren(); }
 function showSearching() {
   clearLog();
   const d = document.createElement('div'); d.className = 'empty';
-  d.innerHTML = '<div class="ring"><i></i><i></i><i></i></div><div>Ищем собеседника…</div><div id="slow" style="margin-top:10px;font-size:13px"></div>';
+  d.innerHTML = '<div class="ring"><i></i><i></i><i></i></div><div>Ищем собеседника…</div><div id="slow" style="margin-top:10px;font-size:13px"></div><button id="randomSearch" type="button" style="margin-top:12px;padding:10px 14px;border:1px solid var(--topic);border-radius:12px;background:var(--glow);color:var(--text);font-weight:700">Попробовать случайный поиск</button>';
   $('log').appendChild(d);
   clearTimeout(waitHint);
-  waitHint = setTimeout(() => { const s = $('slow'); if (s) s.textContent = 'Пока никого нет с такими настройками. Подождите или смягчите фильтры: пол «Не важно», возраст «Любой».'; }, 20000);
+  waitHint = setTimeout(() => {
+    const s = $('slow'); if (s) s.textContent = 'Долго нет совпадений? Случайный поиск попробует найти другого человека без учёта фильтров пола и возраста.';
+    const b = $('randomSearch');
+    if (b) b.onclick = () => { if (mode === 'waiting' && randomFindCmd()) { b.disabled = true; b.textContent = 'Ищем случайного собеседника…'; s.textContent = 'Подбираем среди тех, кто тоже выбрал случайный поиск.'; } };
+  }, 20000);
 }
 function add(cls, text) { const d = document.createElement('div'); d.className = 'm ' + cls; d.textContent = text; $('log').appendChild(d); $('log').scrollTop = 1e9; }
 function sys(text) { const d = document.createElement('div'); d.className = 'sys'; d.textContent = text; $('log').appendChild(d); $('log').scrollTop = 1e9; }
@@ -400,12 +425,14 @@ $('back').onclick = () => {
   userClosed = true; clearTimeout(waitHint); if (ws) ws.close(); ws = null;
   $('chat').hidden = true; $('menu').hidden = false; mode = 'idle'; shownOnline = null; pollOnline();
 };
-$('stop').onclick = () => { if (cmd('leave')) { clearTimeout(waitHint); clearLog(); sys('Вы остановили чат. Нажмите «Следующий», чтобы искать дальше.'); setMode('ended'); } };
+$('stop').onclick = () => { $('chatMenu').open = false; if (cmd('leave')) { clearTimeout(waitHint); clearLog(); sys('Вы остановили чат. Нажмите «Следующий», чтобы искать дальше.'); setMode('ended'); } };
 $('next').onclick = () => {
+  $('chatMenu').open = false;
   if (open()) { if (mode === 'chat' || mode === 'waiting') cmd('leave'); clearLog(); setMode('connecting'); findCmd(); }
   else startSearch();
 };
 $('report').onclick = () => {
+  $('chatMenu').open = false;
   if ($('report').dataset.armed !== '1') {
     $('report').dataset.armed = '1'; $('report').textContent = 'Точно?';
     setTimeout(() => { $('report').dataset.armed = ''; $('report').textContent = 'Жалоба'; }, 3000); return;
@@ -413,6 +440,11 @@ $('report').onclick = () => {
   $('report').dataset.armed = ''; $('report').textContent = 'Жалоба';
   if (cmd('report')) { cmd('leave'); sys('Жалоба отправлена. Спасибо!'); setMode('ended'); }
 };
+$('stickerBtn').onclick = () => { $('stickers').hidden = !$('stickers').hidden; };
+$('stickers').querySelectorAll('[data-sticker]').forEach(b => b.onclick = () => {
+  const sticker = b.dataset.sticker;
+  if (mode === 'chat' && cmd('msg', sticker)) { add('me', sticker); $('stickers').hidden = true; }
+});
 $('form').onsubmit = ev => {
   ev.preventDefault();
   const t = $('text').value.trim();
