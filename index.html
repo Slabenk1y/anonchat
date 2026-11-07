@@ -375,9 +375,9 @@
     background:var(--surface2);color:var(--text);font-size:12px;font-weight:650
   }
   .seg button[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:none}
-  .chips{display:grid;grid-template-columns:1fr;gap:5px}
+  .chips{display:flex;flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:6px}
   .chip{
-    width:100%;min-height:32px;padding:6px 10px;border-radius:5px;
+    width:auto;min-width:48px;flex:1 1 auto;min-height:32px;padding:6px 10px;border-radius:5px;
     border:1px solid var(--line);background:var(--surface2);color:var(--text);
     font-size:12px;font-weight:600;text-align:center
   }
@@ -455,7 +455,18 @@
   }
   @media(max-width:699px){
     #menu{padding:10px 10px 24px}
-    #menu>.wrap{gap:9px}
+    #menu>.wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:
+      "bar bar" "topics topics" "hint hint" "you partner" "confirm confirm" "go go" "why why" "counter counter" "rules rules";gap:9px}
+    #menu>.wrap>.bar{grid-area:bar}
+    #menu>.wrap>.topics{grid-area:topics}
+    #menu>.wrap>.hint{grid-area:hint}
+    #menu>.wrap>section.panel[aria-label="Вы"]{grid-area:you;min-width:0}
+    #menu>.wrap>section.panel[aria-label="Собеседник"]{grid-area:partner;min-width:0}
+    #menu>.wrap>.confirm{grid-area:confirm}
+    #menu>.wrap>#go{grid-area:go}
+    #menu>.wrap>.why{grid-area:why}
+    #menu>.wrap>.counter{grid-area:counter}
+    #menu>.wrap>.rules{grid-area:rules}
     .bar{min-height:48px;padding:7px 10px}
     .bar .logo{width:30px;height:30px}
     .bar b{font-size:20px}
@@ -463,9 +474,11 @@
     .topic{min-height:40px;padding:7px 3px}
     .topic b{font-size:11px}
     .topic small{font-size:9px}
-    #menu>.wrap>section.panel{padding:12px;gap:10px}
-    .seg button{min-height:34px;font-size:11px}
-    .chip{min-height:30px;font-size:11px}
+    #menu>.wrap>section.panel{padding:10px 8px;gap:10px}
+    .panel h2{font-size:11px!important}
+    .seg button{min-height:34px;font-size:10px;padding:6px 2px}
+    .chips{gap:4px}
+    .chip{min-width:0;min-height:30px;font-size:10px;padding:5px 6px}
     #chat{min-height:400px;padding:7px 8px 10px;gap:7px}
     .top{min-height:44px;gap:6px}
     .pill{font-size:10px;padding:4px 6px}
