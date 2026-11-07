@@ -95,7 +95,12 @@ fn client_ip(peer: IpAddr, xff: Option<&str>, hops: usize) -> IpAddr {
 fn origin_ok(origin: Option<&str>, host: Option<&str>) -> bool {
     match (origin, host) {
         (None, _) => true,
-        (Some(o), Some(h)) => o.split_once("://").map_or(false, |(_, rest)| rest.eq_ignore_ascii_case(h)),
+        (Some(o), Some(h)) => {
+            let Some((scheme, authority)) = o.split_once("://") else { return false; };
+            matches!(scheme.to_ascii_lowercase().as_str(), "http" | "https")
+                && !authority.is_empty()
+                && authority.eq_ignore_ascii_case(h)
+        }
         (Some(_), None) => false,
     }
 }
