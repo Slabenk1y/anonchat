@@ -123,12 +123,12 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
         if h.len() > 8 * 1024 {
             return None;
         }
-        let h = h.trim_end_matches(['\\r', '\\n']);
+        let h = h.trim_end_matches(['\r', '\n']);
         if h.is_empty() {
             break;
         }
         header_count += 1;
-        if header_count > 64 || h.starts_with([' ', '\\t']) {
+        if header_count > 64 || h.starts_with([' ', '\t']) {
             return None;
         }
         if let Some((k, v)) = h.split_once(':') {
@@ -136,7 +136,7 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
                 return None;
             }
             let v = v.trim().to_string();
-            if v.bytes().any(|b| b == 0 || b == b'\\r' || b == b'\\n') {
+            if v.bytes().any(|b| b == 0 || b == b'\r' || b == b'\n') {
                 return None;
             }
             match k.to_ascii_lowercase().as_str() {
