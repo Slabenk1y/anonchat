@@ -172,16 +172,147 @@
   #sendBtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
   #sendBtn:disabled,#text:disabled{opacity:.4}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- ECHO BRAND SYSTEM ---------- */
+  :root{
+    color-scheme:dark;
+    --bg:#10101a;--surface:#1a1a29;--surface2:#232338;--line:#34334c;
+    --text:#f7f5ff;--muted:#aaa7c0;--ink:#17132d;--coral:#ff7c91;
+    --me:#39305e;--them:#252538;--glow:#272044;--topic:#a99aff;
+    --brand:#9b89ff;--brand2:#ff9eae;--lime:#d7f36a;
+    --shadow:0 18px 55px #05040e66;
+  }
+  :root[data-theme=light]{
+    color-scheme:light;
+    --bg:#f4f2fb;--surface:#fff;--surface2:#f0eef9;--line:#e3dff0;
+    --text:#242039;--muted:#77728f;--ink:#211b3e;--coral:#d94d70;
+    --me:#e8e1ff;--them:#f0eff6;--glow:#e8e2ff;--topic:#7662e8;
+    --brand:#806bed;--brand2:#ef8da4;--lime:#d9ee83;
+    --shadow:0 18px 55px #32265c1c;
+  }
+  body{background:var(--bg);background-image:radial-gradient(ellipse at 50% -18%,color-mix(in srgb,var(--brand) 20%,transparent),transparent 58%);letter-spacing:-.01em}
+  #menu{padding:24px 18px 42px;background:transparent}
+  .wrap{max-width:620px;gap:17px}
+  .bar{gap:11px;padding:0 2px 5px}
+  .bar .logo{width:42px;height:42px;filter:drop-shadow(0 5px 12px color-mix(in srgb,var(--brand) 35%,transparent))}
+  .bar b{font-size:25px;font-weight:850;letter-spacing:-.055em}
+  .iconbtn{width:42px;height:42px;border-radius:14px;background:var(--surface);border-color:var(--line);box-shadow:0 4px 14px #00000012;transition:transform .18s,border-color .18s}
+  .iconbtn:hover{transform:translateY(-2px);border-color:var(--brand)}
+  .intro-card{position:relative;overflow:hidden;min-height:166px;padding:25px 26px;border:1px solid color-mix(in srgb,var(--brand) 25%,var(--line));border-radius:26px;background:linear-gradient(120deg,color-mix(in srgb,var(--brand) 18%,var(--surface)),var(--surface) 72%);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .intro-copy{position:relative;z-index:1;max-width:390px}
+  .eyebrow{font-size:10px;font-weight:850;letter-spacing:.18em;color:var(--brand);display:block;margin-bottom:10px}
+  .intro-card h1{margin:0;font-size:clamp(27px,6vw,37px);line-height:1.02;letter-spacing:-.065em;font-weight:900}
+  .intro-card h1 span{color:var(--brand)}
+  .intro-card .lead{max-width:330px;margin:11px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+  .intro-orbit{width:104px;height:104px;flex:none;border-radius:34px;background:color-mix(in srgb,var(--brand) 18%,var(--surface));display:grid;place-items:center;position:relative;transform:rotate(7deg)}
+  .intro-orbit svg{width:62px;height:62px;filter:drop-shadow(0 7px 12px #0002)}
+  .orbit-dot{position:absolute;width:13px;height:13px;border-radius:50%;background:var(--lime);right:7px;top:7px;box-shadow:0 0 0 5px color-mix(in srgb,var(--lime) 18%,transparent)}
+  .topics{gap:10px}
+  .topic{min-height:112px;border-radius:20px;padding:15px 8px 13px;background:var(--surface);box-shadow:0 6px 18px #0000000b;transition:transform .18s,border-color .18s,background .18s}
+  .topic svg{width:30px;height:30px}
+  .topic b{font-size:14px;font-weight:800}
+  .topic small{font-size:11px}
+  .topic[aria-pressed=true]{border-color:var(--tc);background:color-mix(in srgb,var(--tc) 13%,var(--surface));box-shadow:0 0 0 1px var(--tc) inset,0 8px 24px #00000012}
+  .topic:hover{transform:translateY(-2px)}
+  .hint{font-size:13px;min-height:1.5em;margin:-8px 3px 0}
+  .panel{border-radius:22px;padding:19px 20px;gap:16px;box-shadow:0 7px 24px #0000000b}
+  .panel h2{font-size:10px;letter-spacing:.16em}
+  .lab{font-size:13px;font-weight:650;color:var(--text);margin-bottom:9px}
+  .seg{background:var(--bg);border:1px solid var(--line);padding:4px;border-radius:14px;gap:5px}
+  .seg button{border-radius:11px;padding:11px 6px;font-size:13px}
+  .seg button[aria-pressed=true]{background:var(--brand);color:#fff;box-shadow:none}
+  .chip{font-size:13px;font-weight:650;padding:9px 13px;border-radius:12px;background:var(--surface2);border-color:transparent}
+  .chip[aria-pressed=true]{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .note{border-radius:14px;font-size:12px;line-height:1.5}
+  .confirm{border-radius:16px;font-size:13px}
+  .cta{border-radius:17px;padding:17px;background:var(--brand);color:#fff;font-size:16px;font-weight:850;box-shadow:0 9px 22px color-mix(in srgb,var(--brand) 28%,transparent);transition:transform .16s,filter .16s}
+  .cta:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-2px)}
+  .cta:disabled{box-shadow:none}
+  .why{font-size:12px}
+  .counter{border-top:1px solid var(--line);font-size:14px}
+  .counter b{font-size:24px;color:var(--brand)}
+  .rules{font-size:12px}
+  .rules summary{font-size:13px;font-weight:700}
+  .settings-panel{border-radius:25px;padding:25px;box-shadow:var(--shadow)}
+  .settings-heading h2{font-size:22px;letter-spacing:-.04em}
+  .settings-heading button{border-radius:12px;background:var(--surface2)}
+  .settings-panel .settings-body{gap:5px}
+  .setting{padding:14px 2px;border-bottom:1px solid var(--line);font-size:14px}
+  .setting:last-child{border-bottom:0}
+  .setting small{font-size:11px}
+  .switch{width:48px;height:28px}
+  .switch span:after{width:22px;height:22px}
+  .switch input:checked+span:after{transform:translateX(20px)}
+  /* chat surfaces */
+  #chat{max-width:820px;padding:12px 16px 16px;gap:10px}
+  .top{min-height:56px;padding:4px 0 10px;gap:10px}
+  .back{width:42px;height:42px;border-radius:14px;background:var(--surface);box-shadow:0 4px 14px #00000012}
+  .pill{padding:6px 12px;border-radius:999px;font-size:11px;font-weight:750;background:var(--surface)}
+  .pill.t{color:var(--brand);border-color:color-mix(in srgb,var(--brand) 45%,var(--line))}
+  .stat{font-size:12px}
+  #log{border-radius:24px;padding:18px;background:var(--surface);box-shadow:inset 0 1px #ffffff08}
+  .m{padding:11px 15px;border-radius:18px;font-size:14px;line-height:1.5}
+  .me{background:var(--me);border-bottom-right-radius:6px}
+  .them{background:var(--them);border-bottom-left-radius:6px}
+  .sys{font-size:12px;padding:7px 12px;background:var(--surface2);border-radius:999px}
+  .search-screen{border-radius:28px;padding:28px 22px;background:linear-gradient(160deg,color-mix(in srgb,var(--brand) 8%,var(--surface)),var(--surface) 60%);box-shadow:var(--shadow)}
+  .search-screen h2{font-size:24px;letter-spacing:-.05em;font-weight:900;margin:8px 0 5px}
+  .search-screen p{font-size:13px}
+  .search-art{height:220px;width:min(390px,100%)}
+  .echo-mascot{width:100%;height:220px;display:grid;place-items:center;filter:drop-shadow(0 14px 15px #0002)}
+  .echo-mascot svg{width:100%;height:220px;overflow:visible}
+  .echo-ripple{fill:none;stroke:var(--brand);stroke-width:1.5;opacity:0;transform-origin:180px 108px;animation:echoRipple 2.4s ease-out infinite}
+  .ripple-two{animation-delay:1.2s}
+  .echo-character{transform-origin:180px 110px;animation:echoFloat 2.8s ease-in-out infinite}
+  .echo-body{fill:var(--brand);stroke:color-mix(in srgb,var(--brand) 55%,var(--text));stroke-width:2}
+  .echo-ear{fill:var(--brand)}
+  .echo-ear-inner{fill:var(--brand2)}
+  .echo-cheek{fill:var(--brand2);opacity:.85}
+  .echo-eyes{fill:#211b3e;transform-origin:180px 106px;animation:echoBlink 4s infinite}
+  .echo-smile{fill:none;stroke:#211b3e;stroke-width:3;stroke-linecap:round}
+  .echo-arm{fill:none;stroke:var(--brand);stroke-width:10;stroke-linecap:round;stroke-linejoin:round}
+  .echo-tail{fill:none;stroke:var(--brand);stroke-width:12;stroke-linecap:round;stroke-linejoin:round;transform-origin:220px 160px;animation:echoWave 1.3s ease-in-out infinite}
+  .echo-spark{fill:var(--lime)}
+  @keyframes echoFloat{0%,100%{transform:translateY(4px) rotate(-2deg) scale(1)}50%{transform:translateY(-10px) rotate(2deg) scale(1.035)}}
+  @keyframes echoWave{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(13deg)}}
+  @keyframes echoRipple{0%{transform:scale(.65);opacity:.45}100%{transform:scale(1.12);opacity:0}}
+  @keyframes echoBlink{0%,46%,50%,100%{transform:scaleY(1)}48%{transform:scaleY(.12)}}
+  .search-dots{gap:7px;margin:18px 0}
+  .search-dots i{width:7px;height:7px;background:var(--brand)}
+  #cancelSearch,#randomSearch{border-radius:13px;padding:11px 17px;font-size:13px;font-weight:750;background:var(--surface2)}
+  #randomSearch{background:color-mix(in srgb,var(--brand) 13%,var(--surface));border-color:var(--brand)}
+  #typing{font-size:12px}
+  .chat-menu summary{border-radius:13px;background:var(--surface);width:40px;height:40px}
+  .chat-menu .menu-items{border-radius:16px;padding:9px;background:var(--surface);box-shadow:var(--shadow)}
+  .chat-menu button{border-radius:11px;font-size:13px}
+  #stickerBtn{border-radius:12px;padding:9px 13px;background:var(--surface)}
+  #stickers{border-radius:16px}
+  #stickers button{border-radius:11px}
+  #text{border-radius:16px;background:var(--surface);border-color:var(--line);padding:14px 17px;font-size:14px}
+  #sendBtn{width:50px;height:50px;border-radius:16px;background:var(--brand);color:#fff}
+  @media(max-width:520px){
+    #menu{padding:16px 13px 30px}
+    .intro-card{min-height:150px;padding:20px 18px;border-radius:22px}
+    .intro-card h1{font-size:29px}
+    .intro-orbit{width:76px;height:76px;border-radius:25px}
+    .intro-orbit svg{width:49px;height:49px}
+    .topics{gap:7px}
+    .topic{min-height:105px;padding:12px 5px}
+    .panel{padding:16px;border-radius:19px}
+    #chat{padding:8px 10px 12px}
+    .search-screen{padding:20px 15px;border-radius:23px}
+  }
+
 </style>
 </head>
 <body>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="logo" viewBox="0 0 48 48">
-    <path d="M8 10h20a6 6 0 0 1 6 6v8a6 6 0 0 1-6 6H18l-7 6v-6H8a6 6 0 0 1-6-6v-8a6 6 0 0 1 6-6z" fill="#3be0b0"/>
-    <path d="M38 14.5c3 3 3 9 0 12" fill="none" stroke="#3be0b0" stroke-width="3" stroke-linecap="round"/>
-    <path d="M43 10c5 5.5 5 14.5 0 20" fill="none" stroke="#3be0b0" stroke-width="3" stroke-linecap="round" opacity=".55"/>
-    <circle cx="12" cy="20" r="2.2" fill="#05211a"/><circle cx="19" cy="20" r="2.2" fill="#05211a"/><circle cx="26" cy="20" r="2.2" fill="#05211a"/>
+    <rect x="2" y="2" width="44" height="44" rx="16" fill="#8b78ff"/>
+    <path d="M11 15.5c0-3 2.4-5.5 5.5-5.5h15c3 0 5.5 2.5 5.5 5.5v11c0 3-2.5 5.5-5.5 5.5H22l-7 5v-5h-1.5c-1.4 0-2.5-1.1-2.5-2.5z" fill="#fff"/>
+    <circle cx="20" cy="21" r="2" fill="#5142b9"/><circle cx="28" cy="21" r="2" fill="#5142b9"/>
+    <path d="M20 26q4 3 8 0" fill="none" stroke="#5142b9" stroke-width="1.8" stroke-linecap="round"/>
   </symbol>
 </svg>
 
@@ -208,7 +339,10 @@
       </div>
     </section>
   </div>
-  <p class="lead">Случайный собеседник без регистрации. Переписка нигде не сохраняется.</p>
+  <section class="intro-card">
+    <div class="intro-copy"><span class="eyebrow">АНОНИМНЫЕ РАЗГОВОРЫ</span><h1>Новые люди.<br><span>Новые истории.</span></h1><p class="lead">Случайный собеседник — в один клик. Без регистрации и лишних вопросов.</p></div>
+    <div class="intro-orbit" aria-hidden="true"><span class="orbit-dot"></span><svg viewBox="0 0 100 100"><use href="#logo"/></svg></div>
+  </section>
 
   <div class="topics" id="topics" role="group" aria-label="Тема общения">
     <button class="topic" type="button" data-topic="chat" style="--tc:#3be0b0">
@@ -280,22 +414,21 @@
   </div>
   <section id="searchScreen" class="search-screen" hidden aria-live="polite">
     <div class="search-art" aria-hidden="true">
-      <div class="mouse-sausage" role="img" aria-label="Длинная розовая мышка-сосиска, извивается волной">
-        <svg viewBox="0 0 320 150" aria-hidden="true">
-          <path class="sausage-body" d="M45 66 C88 53 116 68 151 59 C190 49 218 63 250 54 C278 47 297 55 309 62 C304 83 291 98 268 100 C231 105 207 91 172 101 C126 113 91 93 45 98 Z"/>
-          <g class="mouse-head">
-            <path d="M52 72 C39 67 31 75 29 84" fill="none" stroke="#d99aa9" stroke-width="2"/>
-            <ellipse cx="45" cy="43" rx="17" ry="23" fill="#f5d1d8" stroke="#d5a1ad" stroke-width="2"/>
-            <ellipse cx="78" cy="42" rx="17" ry="22" fill="#f5d1d8" stroke="#d5a1ad" stroke-width="2"/>
-            <ellipse cx="45" cy="45" rx="9" ry="14" fill="#eeb5c1"/>
-            <ellipse cx="78" cy="44" rx="9" ry="13" fill="#eeb5c1"/>
-            <ellipse cx="61" cy="77" rx="34" ry="25" fill="#f5d1d8" stroke="#d5a1ad" stroke-width="2"/>
-            <circle cx="51" cy="70" r="4.5" fill="#242024"/>
-            <circle cx="79" cy="70" r="4.5" fill="#242024"/>
-            <circle cx="50" cy="68.5" r="1.3" fill="#fff"/><circle cx="78" cy="68.5" r="1.3" fill="#fff"/>
-            <ellipse cx="34" cy="81" rx="5" ry="3.5" fill="#292126"/>
-            <path d="M30 80 L5 72 M30 84 L3 85 M32 88 L8 98" fill="none" stroke="#51434a" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M62 89 Q68 94 75 89" fill="none" stroke="#a66e7d" stroke-width="1.6" stroke-linecap="round"/>
+      <div class="echo-mascot" role="img" aria-label="Персонаж Эхо — дружелюбный дух разговора">
+        <svg viewBox="0 0 360 220" aria-hidden="true">
+          <circle class="echo-ripple ripple-one" cx="180" cy="108" r="83"/>
+          <circle class="echo-ripple ripple-two" cx="180" cy="108" r="104"/>
+          <g class="echo-character">
+            <path class="echo-tail" d="M220 151q30 16 40 0q-1 25-29 22" />
+            <path class="echo-body" d="M106 112c0-43 31-75 74-75s74 32 74 75c0 44-31 72-74 72s-74-28-74-72z"/>
+            <path class="echo-ear" d="M126 62q-17-34-31-17q-8 13 12 35zM234 62q17-34 31-17q8 13-12 35z"/>
+            <path class="echo-ear-inner" d="M119 55q-9-18-16-10q-3 7 10 20zM241 55q9-18 16-10q3 7-10 20z"/>
+            <ellipse class="echo-cheek" cx="132" cy="119" rx="12" ry="7"/>
+            <ellipse class="echo-cheek" cx="228" cy="119" rx="12" ry="7"/>
+            <g class="echo-eyes"><ellipse cx="157" cy="106" rx="5" ry="8"/><ellipse cx="203" cy="106" rx="5" ry="8"/></g>
+            <path class="echo-smile" d="M165 128q15 14 30 0"/>
+            <path class="echo-arm" d="M111 139q-22 8-22 25q8 8 19-2M249 139q22 8 22 25q-8 8-19-2"/>
+            <circle class="echo-spark" cx="275" cy="65" r="5"/><path class="echo-spark" d="M83 88l5 9 9 5-9 5-5 9-5-9-9-5 9-5z"/>
           </g>
         </svg>
       </div>
