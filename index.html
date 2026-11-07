@@ -38,6 +38,24 @@
   :root:not([data-theme=light]) .i-sun{display:none}
   :root[data-theme=light] .i-moon{display:none}
   .lead{margin:2px 0 0;color:var(--muted);font-size:15px}
+  .settings{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+  .settings summary{cursor:pointer;font-weight:700;list-style:none;display:flex;align-items:center;justify-content:space-between}
+  .settings summary::-webkit-details-marker{display:none}
+  .settings summary:after{content:'＋';color:var(--muted);font-size:18px}
+  .settings[open] summary:after{content:'−'}
+  .settings-body{display:grid;gap:13px;padding-top:14px}
+  .setting{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px}
+  .setting small{display:block;color:var(--muted);font-size:12px}
+  .switch{width:44px;height:26px;position:relative;flex:none}
+  .switch input{position:absolute;opacity:0;width:1px;height:1px}
+  .switch span{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:.15s}
+  .switch span:after{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:var(--text);transition:.15s}
+  .switch input:checked+span{background:var(--topic)}
+  .switch input:checked+span:after{transform:translateX(18px);background:var(--ink)}
+  .switch input:focus-visible+span{outline:2px solid var(--topic);outline-offset:3px}
+  :root[data-compact=true] #log{gap:3px;padding:9px}
+  :root[data-compact=true] .m{padding:6px 10px}
+  :root[data-motion=off] *,:root[data-motion=off] *:before,:root[data-motion=off] *:after{animation:none!important;transition:none!important}
 
   .topics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .topic{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:18px;padding:14px 8px 12px;
@@ -146,6 +164,15 @@
     </button>
   </div>
   <p class="lead">Случайный собеседник без регистрации. Переписка нигде не сохраняется.</p>
+  <details class="settings" id="settings">
+    <summary>Настройки</summary>
+    <div class="settings-body">
+      <label class="setting"><span>Звуковые уведомления<small>Сигнал при новом сообщении</small></span><span class="switch"><input id="soundSetting" type="checkbox"><span></span></span></label>
+      <label class="setting"><span>Компактные сообщения<small>Больше сообщений на экране</small></span><span class="switch"><input id="compactSetting" type="checkbox"><span></span></span></label>
+      <label class="setting"><span>Отправлять Enter<small>Shift + Enter — новая строка (для многострочного ввода)</small></span><span class="switch"><input id="enterSetting" type="checkbox" checked><span></span></span></label>
+      <label class="setting"><span>Уменьшить анимацию</span><span class="switch"><input id="motionSetting" type="checkbox"><span></span></span></label>
+    </div>
+  </details>
 
   <div class="topics" id="topics" role="group" aria-label="Тема общения">
     <button class="topic" type="button" data-topic="chat" style="--tc:#3be0b0">
@@ -252,6 +279,23 @@ try { const s = JSON.parse(localStorage.getItem('echo.v2') || '{}'); for (const 
 if (!TOPICS[sel.topic]) sel.topic = 'chat';
 function save() { try { localStorage.setItem('echo.v2', JSON.stringify(sel)); } catch {} }
 
+const settingDefaults = {sound:false, compact:false, enter:true, motion:false};
+let settings = {...settingDefaults};
+try { settings = {...settingDefaults, ...JSON.parse(localStorage.getItem('echo.settings.v1') || '{}')}; } catch {}
+function saveSettings() {
+  try { localStorage.setItem('echo.settings.v1', JSON.stringify(settings)); } catch {}
+  document.documentElement.dataset.compact = settings.compact ? 'true' : 'false';
+  document.documentElement.dataset.motion = settings.motion ? 'off' : 'on';
+}
+function initSettings() {
+  const map = {sound:'soundSetting', compact:'compactSetting', enter:'enterSetting', motion:'motionSetting'};
+  for (const [key,id] of Object.entries(map)) {
+    $(id).checked = !!settings[key];
+    $(id).addEventListener('change', () => { settings[key] = $(id).checked; saveSettings(); });
+  }
+  saveSettings();
+}
+
 // ---------- меню ----------
 const ageList = () => TOPICS[sel.topic].ages;
 function partnerList() {
@@ -305,6 +349,7 @@ document.querySelectorAll('#seek button').forEach(b => b.onclick = () => { sel.s
 $('confirm').onchange = renderMenu;
 $('themeBtn').onclick = () => { sel.theme = sel.theme === 'light' ? 'dark' : 'light'; save(); renderMenu(); };
 renderMenu();
+initSettings();
 
 // ---------- онлайн ----------
 function plural(n, one, few, many) {
@@ -379,7 +424,7 @@ function handle(e) {
     $('partnerPill').textContent = [g, a].filter(Boolean).join(' · '); $('partnerPill').hidden = false;
     sys(TOPICS[sel.topic].hello);
   }
-  else if (e.t === 'msg') { add('them', e.text); $('typing').textContent = ''; }
+  else if (e.t === 'msg') { add('them', e.text); $('typing').textContent = ''; if (settings.sound) playNotice(); }
   else if (e.t === 'typing') { $('typing').textContent = 'Собеседник печатает…'; clearTimeout(typingTimer); typingTimer = setTimeout(() => $('typing').textContent = '', 3000); }
   else if (e.t === 'left') { sys('Собеседник завершил чат.'); setMode('ended'); $('typing').textContent = ''; }
   else if (e.t === 'banned') { sys('Доступ заблокирован из-за жалоб пользователей.'); setMode('banned'); }
@@ -415,6 +460,17 @@ function showSearching() {
 }
 function add(cls, text) { const d = document.createElement('div'); d.className = 'm ' + cls; d.textContent = text; $('log').appendChild(d); $('log').scrollTop = 1e9; }
 function sys(text) { const d = document.createElement('div'); d.className = 'sys'; d.textContent = text; $('log').appendChild(d); $('log').scrollTop = 1e9; }
+let audioCtx = null;
+function playNotice() {
+  try {
+    audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.frequency.value = 740; gain.gain.setValueAtTime(.045, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + .12);
+    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + .12);
+  } catch {}
+}
 
 $('go').onclick = () => {
   $('menu').hidden = true; $('chat').hidden = false;
@@ -450,6 +506,11 @@ $('form').onsubmit = ev => {
   const t = $('text').value.trim();
   if (!t || mode !== 'chat') return;
   if (cmd('msg', t)) { add('me', t); $('text').value = ''; } else sys('Сообщение не отправлено: нет связи.');
+};
+$('text').onkeydown = ev => {
+  if (ev.key === 'Enter' && !ev.shiftKey && settings.enter) {
+    ev.preventDefault(); $('form').requestSubmit();
+  }
 };
 $('text').oninput = () => {
   const now = Date.now();
