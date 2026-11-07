@@ -1,0 +1,10 @@
+[package]
+name = "anon-chat"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "anon-chat"
+path = "main.rs"
+
+[dependencies]

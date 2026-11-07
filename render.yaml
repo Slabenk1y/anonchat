@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: anon-chat
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: CHAT_PROXY_HOPS
+        value: "1"
