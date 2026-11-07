@@ -223,6 +223,9 @@ fn handle_cmd(sh: &Shared, w: &Writer, id: &str, text: &str) {
 
 /// Поток-писатель: отправляет события клиенту и шлёт пульс, когда тихо.
 fn writer_loop(sh: Arc<Shared>, w: Writer, id: String, done: Arc<AtomicBool>) {
+    // Не даём клиентским ping/командам сбрасывать таймер heartbeat:
+    // Condvar может просыпаться сколько угодно раз, срок следующего пульса фиксирован.
+    let mut next_beat = Instant::now() + HEARTBEAT;
     loop {
         let (events, beat) = {
             let mut g = sh.lock();
@@ -235,11 +238,14 @@ fn writer_loop(sh: Arc<Shared>, w: Writer, id: String, done: Arc<AtomicBool>) {
                     Some(v) if !v.is_empty() => break (v, false),
                     _ => {}
                 }
-                let (ng, res) = sh.cv.wait_timeout(g, HEARTBEAT).unwrap_or_else(|e| e.into_inner());
-                g = ng;
-                if res.timed_out() {
+                let now = Instant::now();
+                if now >= next_beat {
+                    next_beat = now + HEARTBEAT;
                     break (Vec::new(), true);
                 }
+                let wait = next_beat.saturating_duration_since(now);
+                let (ng, _) = sh.cv.wait_timeout(g, wait).unwrap_or_else(|e| e.into_inner());
+                g = ng;
             }
         };
         for e in events {
