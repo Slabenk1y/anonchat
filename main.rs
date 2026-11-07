@@ -109,6 +109,9 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
     let mut rd = BufReader::new(stream.take(MAX_HEAD));
     let mut line = String::new();
     rd.read_line(&mut line).ok()?;
+    if line.len() > 8 * 1024 {
+        return None;
+    }
     let mut parts = line.split_whitespace();
     let method = parts.next()?.to_string();
     let target = parts.next()?;
