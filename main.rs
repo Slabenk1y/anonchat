@@ -183,7 +183,7 @@ fn send_err(w: &Writer, msg: &str) {
 }
 
 /// Команды клиента: поля разделены табуляцией.
-///   find \t тема \t свой_пол \t кого_ищем \t свой_возраст \t возрасты_через_запятую
+///   find/random \t тема \t свой_пол \t кого_ищем \t свой_возраст \t возрасты_через_запятую
 ///   msg \t текст | typing | leave | report | ping
 fn handle_cmd(sh: &Shared, w: &Writer, id: &str, text: &str) {
     let now = Instant::now();
@@ -197,12 +197,15 @@ fn handle_cmd(sh: &Shared, w: &Writer, id: &str, text: &str) {
                 st.touch(id, now);
                 Ok(())
             }
-            "find" => {
+            "find" | "random" => {
+                let random = cmd == "random";
                 let f: Vec<&str> = rest.split('\t').collect();
                 if f.len() != 5 {
                     Err((400, "неверный запрос"))
                 } else {
-                    Prefs::parse(f[0], f[1], f[2], f[3], f[4]).and_then(|pf| st.find(id, now, pf))
+                    Prefs::parse(f[0], f[1], f[2], f[3], f[4]).and_then(|pf| {
+                        if random { st.find_random(id, now, pf) } else { st.find(id, now, pf) }
+                    })
                 }
             }
             "msg" => st.send(id, rest, now),
