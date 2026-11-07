@@ -454,6 +454,74 @@
     #text{padding:10px 11px}
     #sendBtn{width:42px;height:42px}
   }
+
+  /* Compact Nekto-inspired mobile layout (safe general-chat mode) */
+  :root{
+    color-scheme:dark;
+    --bg:#101010;--surface:#171717;--surface2:#252525;--line:#4b4b4b;
+    --text:#f3f3f3;--muted:#d0d0d0;--ink:#fff;--brand:#4d17bd;
+    --topic:#4d17bd;--me:#30234b;--them:#252525;--glow:#20202a;
+  }
+  :root[data-theme=light]{
+    color-scheme:light;
+    --bg:#f3f3f3;--surface:#fff;--surface2:#e5e5e5;--line:#c6c6c6;
+    --text:#252525;--muted:#555;--ink:#fff;--brand:#4d17bd;
+    --topic:#4d17bd;--me:#e8e0fa;--them:#e9e9e9;--glow:#eee9fa;
+  }
+  html,body{min-height:100%;height:auto;background:var(--bg);background-image:none}
+  #menu{min-height:100dvh;padding:0 0 24px;background:var(--bg)}
+  #menu>.wrap{width:min(430px,100%);max-width:430px;gap:9px;padding:0 10px}
+  .bar{min-height:48px;margin:0 -10px 2px;padding:6px 12px;border:0;border-radius:0;
+    background:#536b83;color:#fff;box-shadow:none}
+  .bar b{font-size:20px;color:#fff}
+  .bar .logo{width:30px;height:30px}
+  .iconbtn{width:34px;height:34px;border-radius:4px;background:transparent;border-color:#ffffff66}
+  .intro-card{display:none}
+  .topics{grid-template-columns:1fr;gap:5px}
+  .topics-label{font-size:12px;color:var(--text);margin:2px 0 1px}
+  .topic[data-topic="flirt"],.topic[data-topic="rp"]{display:none}
+  .topic{min-height:34px;padding:6px 8px;border-radius:4px;background:#c7cbd0;color:#252525;
+    border:1px solid #aeb4bb;box-shadow:none}
+  .topic b{font-size:12px;font-weight:500}
+  .topic[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:#fff}
+  .hint{min-height:0;margin:0;font-size:11px}
+  .choice-row{gap:12px}
+  .lab{font-size:11px;color:var(--text);font-weight:700;margin:0 0 5px}
+  .lab em{display:block;margin:2px 0 0;font-size:9px}
+  .seg{grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;background:transparent}
+  .seg button{min-height:29px;padding:5px 3px;border-radius:0;border:1px solid #aeb4bb;
+    background:#c7cbd0;color:#303030;font-size:10px;font-weight:500;box-shadow:none}
+  .seg button+button{border-left:0}
+  .seg button[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:#fff}
+  .chips{gap:0}
+  .chip{min-height:29px;padding:5px 5px;border-radius:0;border:1px solid #aeb4bb;
+    background:#c7cbd0;color:#303030;font-size:10px;font-weight:500;box-shadow:none}
+  .chip+.chip{border-top:0}
+  .chip[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:#fff}
+  .theme-row{justify-content:flex-start;gap:10px;padding:4px 0;background:transparent;border:0;box-shadow:none;
+    color:var(--text);font-size:11px}
+  .theme-options{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1}
+  .theme-choice{min-height:29px;padding:5px 8px;border-radius:4px;background:#c7cbd0;color:#303030;
+    border:1px solid #aeb4bb;font-size:10px;font-weight:500}
+  .theme-choice[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:#fff}
+  .note{padding:7px 9px;border-radius:4px;font-size:10px}
+  .confirm{padding:8px;border-radius:4px;font-size:10px}
+  .cta{width:128px;min-height:34px;align-self:center;padding:6px 12px;border:1px solid #00d45a;
+    border-radius:18px;background:transparent;color:#00e65f;font-size:12px;font-weight:600;box-shadow:none}
+  .cta:disabled{opacity:.45}
+  .why{font-size:10px;margin:0}
+  .counter{margin-top:1px;padding:8px 0 0;border-top:1px solid #777;color:var(--text);font-size:11px}
+  .counter b{font-size:12px;color:var(--text)}
+  .counter small{font-size:11px;color:var(--text)}
+  .rules{padding:8px 10px;border-radius:4px;font-size:10px}
+  .rules summary{font-size:11px}
+  @media(max-width:360px){
+    #menu>.wrap{padding:0 8px}
+    .choice-row{gap:8px}
+    .lab{font-size:10px}
+    .seg button,.chip{font-size:9px}
+  }
+
 </style>
 </head>
 <body>
@@ -637,7 +705,7 @@ const GENDER_SHORT = {m:'М', f:'Ж', x:'Некто'};
 
 let sel = {topic: 'chat', gender: 'x', seek: 'any', age: null, ages: [], theme: 'dark'};
 try { const s = JSON.parse(localStorage.getItem('echo.v2') || '{}'); for (const k of Object.keys(sel)) if (s[k] !== undefined) sel[k] = s[k]; } catch {}
-if (!TOPICS[sel.topic]) sel.topic = 'chat';
+if (!TOPICS[sel.topic] || TOPICS[sel.topic].adult) sel.topic = 'chat';
 function save() { try { localStorage.setItem('echo.v2', JSON.stringify(sel)); } catch {} }
 
 const settingDefaults = {sound:false, compact:false, enter:true, motion:false};
