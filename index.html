@@ -38,7 +38,24 @@
   :root:not([data-theme=light]) .i-sun{display:none}
   :root[data-theme=light] .i-moon{display:none}
   .lead{margin:2px 0 0;color:var(--muted);font-size:15px}
-  .settings{position:relative;flex:none}
+  .settings-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px}
+  .settings-overlay[hidden]{display:none}
+  .settings-backdrop{position:absolute;inset:0;border:0;background:#0009;cursor:default}
+  .settings-panel{position:relative;width:min(420px,100%);padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 20px 70px #0007}
+  .settings-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .settings-heading h2{margin:0;font-size:20px}
+  .settings-heading button{width:36px;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);font-size:25px;line-height:1}
+  .settings-panel .settings-body{display:grid;gap:18px}
+  .setting{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px}
+  .setting small{display:block;color:var(--muted);font-size:12px}
+  .switch{width:44px;height:26px;position:relative;flex:none}
+  .switch input{position:absolute;opacity:0;width:1px;height:1px}
+  .switch span{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:.15s}
+  .switch span:after{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:var(--text);transition:.15s}
+  .switch input:checked+span{background:var(--topic)}
+  .switch input:checked+span:after{transform:translateX(18px);background:var(--ink)}
+  .switch input:focus-visible+span{outline:2px solid var(--topic);outline-offset:3px}
+
   .settings summary{list-style:none;width:38px;height:38px;border:1px solid var(--line);border-radius:12px;background:var(--surface);display:grid;place-items:center;cursor:pointer}
   .settings summary::-webkit-details-marker{display:none}
   .settings summary:after{content:none}
@@ -126,12 +143,12 @@
   .search-screen h2{font-size:21px;margin:8px 0 4px;color:var(--text)}
   .search-screen p{margin:0;color:var(--muted);font-size:14px;max-width:28ch}
   .search-art{width:190px;height:170px;position:relative;display:grid;place-items:center}
-  .mouse-sausage{position:relative;z-index:2;font-size:58px;display:flex;align-items:center;gap:0;animation:mouseSausage 1.8s ease-in-out infinite}
-  .mouse{display:inline-block;transform:rotate(-12deg);filter:drop-shadow(0 5px 5px #0002)}
-  .sausage{display:inline-block;font-size:48px;margin-left:-9px;transform:rotate(15deg);filter:drop-shadow(0 5px 5px #0002)}
+  .mouse-sausage{position:relative;z-index:2;width:170px;height:140px;display:grid;place-items:center;animation:mouseSausage 1.15s linear infinite;filter:drop-shadow(0 7px 7px #0003)}
+  .mouse-sausage svg{width:170px;height:140px;overflow:visible}
+  .sausage-character{transform-origin:95px 82px}
   .orbit{position:absolute;border:1px dashed color-mix(in srgb,var(--topic) 55%,transparent);border-radius:50%;width:145px;height:65px;transform:rotate(-22deg);animation:orbitSpin 5s linear infinite}
   .orbit-b{width:165px;height:82px;transform:rotate(48deg);animation-direction:reverse;opacity:.55}
-  @keyframes mouseSausage{0%,100%{transform:translateY(4px) rotate(-8deg)}50%{transform:translateY(-8px) rotate(8deg)}}
+  @keyframes mouseSausage{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
   @keyframes orbitSpin{to{transform:rotate(338deg)}}
   .search-dots{display:flex;gap:6px;margin:18px 0}
   .search-dots i{width:7px;height:7px;border-radius:50%;background:var(--topic);animation:searchDot 1s ease-in-out infinite}
@@ -176,19 +193,23 @@
   <div class="bar">
     <svg class="logo" role="img" aria-label="Логотип Эхо"><use href="#logo"/></svg>
     <b>Эхо</b>
-    <details class="settings" id="settings">
-      <summary aria-label="Настройки" title="Настройки"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V20h-2.4v-.21a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-1.7-1.7.06-.06A1.7 1.7 0 0 0 8.52 15a1.7 1.7 0 0 0-1.55-1H6v-2.4h.97a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.7-1.7.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-1.55V5h2.4v.81a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.7 1.7-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.55 1H22v2.4h-1.05a1.7 1.7 0 0 0-1.55 1.6z"/></svg></summary>
+    <button class="iconbtn" id="settingsBtn" type="button" aria-label="Настройки" title="Настройки"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V20h-2.4v-.21a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-1.7-1.7.06-.06A1.7 1.7 0 0 0 8.52 15a1.7 1.7 0 0 0-1.55-1H6v-2.4h.97a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.7-1.7.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-1.55V5h2.4v.81a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.7 1.7-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.55 1H22v2.4h-1.05a1.7 1.7 0 0 0-1.55 1.6z"/></svg></button>
+    <button class="iconbtn" id="themeBtn" type="button" aria-label="Сменить цветовую схему">
+      <svg class="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+      <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+  <div class="settings-overlay" id="settingsOverlay" hidden>
+    <button class="settings-backdrop" id="settingsBackdrop" aria-label="Закрыть настройки" type="button"></button>
+    <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="settings-heading"><h2 id="settingsTitle">Настройки</h2><button id="settingsClose" type="button" aria-label="Закрыть">×</button></div>
       <div class="settings-body">
         <label class="setting"><span>Звуковые уведомления<small>Сигнал при новом сообщении</small></span><span class="switch"><input id="soundSetting" type="checkbox"><span></span></span></label>
         <label class="setting"><span>Компактные сообщения<small>Больше сообщений на экране</small></span><span class="switch"><input id="compactSetting" type="checkbox"><span></span></span></label>
         <label class="setting"><span>Отправлять Enter<small>Отправлять сообщение клавишей Enter</small></span><span class="switch"><input id="enterSetting" type="checkbox" checked><span></span></span></label>
         <label class="setting"><span>Уменьшить анимацию</span><span class="switch"><input id="motionSetting" type="checkbox"><span></span></span></label>
       </div>
-    </details>
-    <button class="iconbtn" id="themeBtn" type="button" aria-label="Сменить цветовую схему">
-      <svg class="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
-      <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-    </button>
+    </section>
   </div>
   <p class="lead">Случайный собеседник без регистрации. Переписка нигде не сохраняется.</p>
 
@@ -262,10 +283,26 @@
   </div>
   <section id="searchScreen" class="search-screen" hidden aria-live="polite">
     <div class="search-art" aria-hidden="true">
-      <div class="mouse-sausage"><span class="mouse">🐭</span><span class="sausage">🌭</span></div>
+      <div class="mouse-sausage" role="img" aria-label="Розовая мышка-сосиска">
+        <svg viewBox="0 0 190 150" aria-hidden="true">
+          <g class="sausage-character">
+            <path d="M45 87 C25 80 17 95 26 106 C34 116 49 108 55 101" fill="none" stroke="#f28caf" stroke-width="9" stroke-linecap="round"/>
+            <ellipse cx="95" cy="82" rx="54" ry="31" fill="#f49ab8" stroke="#d96f96" stroke-width="3"/>
+            <ellipse cx="59" cy="55" rx="21" ry="23" fill="#f49ab8" stroke="#d96f96" stroke-width="3"/>
+            <ellipse cx="131" cy="55" rx="21" ry="23" fill="#f49ab8" stroke="#d96f96" stroke-width="3"/>
+            <ellipse cx="59" cy="56" rx="10" ry="13" fill="#ffc4d6"/><ellipse cx="131" cy="56" rx="10" ry="13" fill="#ffc4d6"/>
+            <ellipse cx="95" cy="80" rx="48" ry="25" fill="#f7a9c2"/>
+            <circle cx="78" cy="77" r="3.7" fill="#492b3a"/><circle cx="111" cy="77" r="3.7" fill="#492b3a"/>
+            <ellipse cx="95" cy="87" rx="5" ry="3.5" fill="#d95f89"/>
+            <path d="M89 94 Q95 100 101 94" fill="none" stroke="#8f405f" stroke-width="2" stroke-linecap="round"/>
+            <ellipse cx="67" cy="89" rx="8" ry="4" fill="#f07f9f" opacity=".7"/><ellipse cx="123" cy="89" rx="8" ry="4" fill="#f07f9f" opacity=".7"/>
+            <path d="M70 108 Q95 119 120 108" fill="none" stroke="#d96f96" stroke-width="2" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
       <span class="orbit orbit-a"></span><span class="orbit orbit-b"></span>
     </div>
-    <h2>Ищем собеседника</h2>
+    <h2>Мышка сосиска, туц тудуц</h2>
     <p id="searchCaption">Подбираем человека по вашим настройкам…</p>
     <div class="search-dots"><i></i><i></i><i></i></div>
     <button id="cancelSearch" type="button">Отменить поиск</button>
@@ -317,6 +354,12 @@ function saveSettings() {
   document.documentElement.dataset.motion = settings.motion ? 'off' : 'on';
 }
 function initSettings() {
+  const panel = $('settingsOverlay');
+  const closeSettings = () => { panel.hidden = true; $('settingsBtn').focus(); };
+  $('settingsBtn').addEventListener('click', () => { panel.hidden = false; $('settingsClose').focus(); });
+  $('settingsClose').addEventListener('click', closeSettings);
+  $('settingsBackdrop').addEventListener('click', closeSettings);
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !panel.hidden) closeSettings(); });
   const map = {sound:'soundSetting', compact:'compactSetting', enter:'enterSetting', motion:'motionSetting'};
   for (const [key,id] of Object.entries(map)) {
     $(id).checked = !!settings[key];
