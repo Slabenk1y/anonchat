@@ -70,6 +70,7 @@ fn query_id(q: &str) -> Option<&str> {
 }
 
 const LANGS: [&str; 2] = ["ru", "en"];
+const TOPICS: [&str; 3] = ["chat", "rp", "advice"];
 const TAGS: [&str; 11] = [
     "talk", "music", "games", "movies", "anime", "sport", "tech", "books", "travel", "memes", "study",
 ];
@@ -79,21 +80,23 @@ fn query_param<'a>(q: &'a str, key: &str) -> Option<&'a str> {
 }
 
 /// Язык и интересы из запроса. Принимаются только значения из белого списка, не больше трёх интересов.
-fn parse_filters(q: &str) -> (String, Vec<String>) {
+fn parse_filters(q: &str) -> (String, String, Vec<String>) {
     let lang = query_param(q, "lang").filter(|l| LANGS.contains(l)).unwrap_or("ru").to_string();
+    let topic = query_param(q, "topic").filter(|t| TOPICS.contains(t)).unwrap_or("chat").to_string();
     let mut tags: Vec<String> = Vec::new();
     for t in query_param(q, "tags").unwrap_or("").split(',') {
         if TAGS.contains(&t) && !tags.iter().any(|x| x == t) && tags.len() < 3 {
             tags.push(t.to_string());
         }
     }
-    (lang, tags)
+    (lang, topic, tags)
 }
 
 fn route(sh: &Shared, req: &Req) -> Resp {
     let now = Instant::now();
     match (req.method.as_str(), req.path.as_str()) {
         ("GET", "/") => Resp { status: 200, ctype: "text/html; charset=utf-8", body: INDEX_HTML.to_string() },
+        ("GET", "/api/online") => json(200, format!("{{\"n\":{}}}", sh.lock().online())),
         ("GET", "/healthz") => json(200, "{\"ok\":true}".into()),
         ("POST", "/api/join") => {
             let r = sh.lock().join(req.ip, now, new_id());
@@ -114,8 +117,8 @@ fn route(sh: &Shared, req: &Req) -> Resp {
                 let mut st = sh.lock();
                 match p {
                     "/api/find" => {
-                        let (lang, tags) = parse_filters(&req.query);
-                        st.find(id, now, &lang, &tags)
+                        let (lang, topic, tags) = parse_filters(&req.query);
+                        st.find(id, now, &lang, &topic, &tags)
                     }
                     .map(|_| "{\"ok\":true}".to_string()),
                     "/api/leave" => st.leave(id, now).map(|_| "{\"ok\":true}".to_string()),
@@ -293,10 +296,11 @@ mod tests {
 
     #[test]
     fn filters_are_whitelisted() {
-        let (l, t) = parse_filters("id=x&lang=en&tags=music,evil,games,music,anime,sport");
-        assert_eq!(l, "en");
+        let (l, tp, t) = parse_filters("id=x&lang=en&topic=rp&tags=music,evil,games,music,anime,sport");
+        assert_eq!((l.as_str(), tp.as_str()), ("en", "rp"));
         assert_eq!(t, vec!["music", "games", "anime"]);
-        assert_eq!(parse_filters("id=x&lang=zz").0, "ru");
+        assert_eq!(parse_filters("id=x&lang=zz&topic=flirt").0, "ru");
+        assert_eq!(parse_filters("id=x&topic=flirt").1, "chat");
     }
 
     #[test]

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0c1316">
+
 <title>Эхо — анонимный чат</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%230c1316'/%3E%3Cpath d='M8 10h20a6 6 0 0 1 6 6v8a6 6 0 0 1-6 6H18l-7 6v-6H8a6 6 0 0 1-6-6v-8a6 6 0 0 1 6-6z' fill='%2342e0b0' transform='translate(3 3) scale(.85)'/%3E%3C/svg%3E">
 <style>
@@ -13,6 +13,12 @@
     --coral:#ff7a66; --me:#17463b; --them:#1b2a30;
     --r:16px;
   }
+  :root[data-theme=light]{
+    --bg:#f2f7f6; --panel:#ffffff; --panel2:#e7f0ee; --line:#d2e0dd;
+    --text:#10211e; --muted:#587068; --accent:#12c298; --accent-ink:#03221a;
+    --coral:#d6402b; --me:#c9f2e5; --them:#e5edef; --glow:#d4f3ea;
+  }
+  :root{--glow:#12332f}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
     font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
@@ -23,7 +29,7 @@
 
   /* ---------- старт ---------- */
   #start{min-height:100%;display:flex;flex-direction:column;align-items:center;padding:28px 16px 24px;
-    background:radial-gradient(120% 60% at 50% -10%,#12332f 0%,transparent 60%)}
+    background:radial-gradient(120% 60% at 50% -10%,var(--glow) 0%,transparent 60%)}
   .brand{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin-top:4vh}
   .logo{width:72px;height:72px}
   .brand h1{margin:0;font-size:40px;letter-spacing:.02em;font-weight:800}
@@ -43,6 +49,13 @@
   .cta{border:0;border-radius:14px;padding:16px;background:var(--accent);color:var(--accent-ink);font-size:18px;font-weight:700}
   .cta:disabled{opacity:.4;cursor:not-allowed}
   .online{font-size:13px;color:var(--muted);text-align:center}
+  .topics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .topics button{border:1px solid var(--line);background:transparent;border-radius:12px;padding:11px 4px;font-weight:600}
+  .topics button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .hint{margin-top:8px;font-size:13px;color:var(--muted);min-height:2.6em}
+  .counter{text-align:center;margin-top:20px;font-size:18px}
+  .counter b{font-variant-numeric:tabular-nums}
+  .counter small{display:block;color:var(--muted);font-size:14px;margin-top:2px}
   .rules{max-width:460px;width:100%;margin-top:18px;color:var(--muted);font-size:13px;line-height:1.5}
   .rules summary{cursor:pointer;color:var(--text)}
   .rules ul{margin:8px 0 0;padding-left:20px}
@@ -52,6 +65,7 @@
   .top{display:flex;align-items:center;gap:10px;padding:4px 2px 10px}
   .top .logo{width:30px;height:30px}
   .top b{font-size:18px}
+  .tag{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
   #status{margin-left:auto;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
   .dot.on{background:var(--accent)}
@@ -99,6 +113,15 @@
 
   <section class="card" aria-label="Настройки поиска">
     <div>
+      <div class="label"><span>Тема общения</span></div>
+      <div class="topics" id="topics">
+        <button type="button" data-topic="chat" aria-pressed="true">Общение</button>
+        <button type="button" data-topic="rp" aria-pressed="false">Ролка</button>
+        <button type="button" data-topic="advice" aria-pressed="false">Советы</button>
+      </div>
+      <div class="hint" id="topicHint"></div>
+    </div>
+    <div>
       <div class="label"><span>Язык общения</span></div>
       <div class="seg" id="langSeg">
         <button type="button" data-lang="ru" aria-pressed="true">Русский</button>
@@ -109,10 +132,19 @@
       <div class="label"><span>О чём поговорим</span><span id="tagCount">0 / 3</span></div>
       <div class="chips" id="chips"></div>
     </div>
+    <div>
+      <div class="label"><span>Цветовая схема</span></div>
+      <div class="seg" id="themeSeg">
+        <button type="button" data-theme="light" aria-pressed="false">Светлая</button>
+        <button type="button" data-theme="dark" aria-pressed="true">Тёмная</button>
+      </div>
+    </div>
     <label class="agree"><input type="checkbox" id="age"><span>Мне есть 18 лет. Я не буду присылать оскорбления, угрозы, спам и запрещённый контент.</span></label>
     <button class="cta" id="go" disabled>Начать чат</button>
-    <div class="online" id="online">Интересы только помогают найти близкого по темам человека. Если никого нет, соединим с любым.</div>
+    <div class="online">Интересы помогают найти близкого по темам человека. Если никого нет, соединим с любым.</div>
   </section>
+
+  <div class="counter" id="counter" hidden>Сейчас в чате: <b id="onlineN">0</b><small id="onlineWord"></small></div>
 
   <details class="rules">
     <summary>Правила и безопасность</summary>
@@ -127,7 +159,7 @@
 
 <main id="chat" hidden>
   <div class="top">
-    <svg class="logo" aria-hidden="true"><use href="#logo"/></svg><b>Эхо</b>
+    <svg class="logo" aria-hidden="true"><use href="#logo"/></svg><b>Эхо</b><span class="tag" id="topicTag"></span>
     <span id="status"><span class="dot" id="dot"></span><span id="statusText">…</span></span>
   </div>
   <div id="log"></div>
@@ -146,13 +178,23 @@
 <script>
 const TAGS = [['talk','Просто поболтать'],['music','Музыка'],['games','Игры'],['movies','Кино'],['anime','Аниме'],['sport','Спорт'],['tech','Технологии'],['books','Книги'],['travel','Путешествия'],['memes','Мемы'],['study','Учёба']];
 const $ = id => document.getElementById(id);
-let sid = null, mode = 'idle', epoch = 0, lang = 'ru', tags = [], typingTimer = null, lastTypingSent = 0;
+const TOPIC_INFO = {
+  chat:   ['Общение',   'Обычный разговор на любую тему.',                      'Собеседник найден. Поздоровайтесь!'],
+  rp:     ['Ролка',     'Ролевая игра: придумайте сюжет и роли вместе.',        'Собеседник найден. Договоритесь о сюжете и ролях.'],
+  advice: ['Советы',    'Расскажите о ситуации и спросите чужое мнение.',       'Собеседник найден. Расскажите, о чём хотите посоветоваться.']
+};
+let sid = null, mode = 'idle', epoch = 0, lang = 'ru', topic = 'chat', theme = 'dark', tags = [], typingTimer = null, lastTypingSent = 0;
 
 // ---------- меню ----------
-try { const s = JSON.parse(localStorage.getItem('echo.prefs') || '{}'); if (s.lang) lang = s.lang; if (Array.isArray(s.tags)) tags = s.tags.slice(0, 3); } catch {}
-function savePrefs() { try { localStorage.setItem('echo.prefs', JSON.stringify({lang, tags})); } catch {} }
+try { const s = JSON.parse(localStorage.getItem('echo.prefs') || '{}'); if (s.lang) lang = s.lang; if (TOPIC_INFO[s.topic]) topic = s.topic; if (s.theme === 'light' || s.theme === 'dark') theme = s.theme; if (Array.isArray(s.tags)) tags = s.tags.slice(0, 3); } catch {}
+function savePrefs() { try { localStorage.setItem('echo.prefs', JSON.stringify({lang, topic, theme, tags})); } catch {} }
 
+function applyTheme() { document.documentElement.dataset.theme = theme; }
 function renderMenu() {
+  applyTheme();
+  document.querySelectorAll('#topics button').forEach(b => b.setAttribute('aria-pressed', b.dataset.topic === topic));
+  document.querySelectorAll('#themeSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.theme === theme));
+  $('topicHint').textContent = TOPIC_INFO[topic][1];
   document.querySelectorAll('#langSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang));
   $('tagCount').textContent = tags.length + ' / 3';
   $('chips').innerHTML = '';
@@ -167,11 +209,13 @@ function renderMenu() {
   }
 }
 document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => { lang = b.dataset.lang; savePrefs(); renderMenu(); });
+document.querySelectorAll('#topics button').forEach(b => b.onclick = () => { topic = b.dataset.topic; savePrefs(); renderMenu(); });
+document.querySelectorAll('#themeSeg button').forEach(b => b.onclick = () => { theme = b.dataset.theme; savePrefs(); renderMenu(); });
 $('age').onchange = () => $('go').disabled = !$('age').checked;
 renderMenu();
 
 $('go').onclick = async () => {
-  $('start').hidden = true; $('chat').hidden = false;
+  $('start').hidden = true; $('chat').hidden = false; $('topicTag').textContent = TOPIC_INFO[topic][0];
   try { await join(); await find(); } catch (e) { sys(e.message || 'Не удалось подключиться'); }
 };
 
@@ -183,7 +227,7 @@ async function api(path, body, extra) {
   if (!r.ok) throw new Error(j.error || ('Ошибка ' + r.status));
   return j;
 }
-const find = () => { clearLog(); return api('/api/find', '', '&lang=' + lang + '&tags=' + tags.join(',')); };
+const find = () => { clearLog(); return api('/api/find', '', '&lang=' + lang + '&topic=' + topic + '&tags=' + tags.join(',')); };
 
 async function join() {
   const r = await fetch('/api/join', {method: 'POST'});
@@ -205,12 +249,36 @@ async function poll(my) {
 
 function handle(e) {
   if (e.t === 'waiting') { setMode('waiting'); showSearching(); }
-  else if (e.t === 'matched') { clearLog(); setMode('chat'); sys('Собеседник найден. Поздоровайтесь!'); }
+  else if (e.t === 'matched') { clearLog(); setMode('chat'); sys(TOPIC_INFO[topic][2]); }
   else if (e.t === 'msg') { add('them', e.text); $('typing').textContent = ''; }
   else if (e.t === 'typing') { $('typing').textContent = 'Собеседник печатает…'; clearTimeout(typingTimer); typingTimer = setTimeout(() => $('typing').textContent = '', 3000); }
   else if (e.t === 'left') { sys('Собеседник завершил чат.'); setMode('ended'); $('typing').textContent = ''; }
   else if (e.t === 'banned') { sys('Доступ заблокирован из-за жалоб пользователей.'); setMode('banned'); }
 }
+
+// ---------- онлайн ----------
+// Число перерисовывается только когда оно изменилось.
+function plural(n, one, few, many) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}
+let shownOnline = null;
+async function pollOnline() {
+  if ($('start').hidden || document.hidden) return;
+  try {
+    const r = await fetch('/api/online', {cache: 'no-store'});
+    if (!r.ok) return;
+    const n = (await r.json()).n;
+    if (typeof n !== 'number' || n === shownOnline) return;
+    shownOnline = n;
+    $('onlineN').textContent = n;
+    $('onlineWord').textContent = n === 0 ? 'Станьте первым!' : plural(n, 'пользователь', 'пользователя', 'пользователей') + '. Присоединяйтесь!';
+    $('counter').hidden = false;
+  } catch {}
+}
+setInterval(pollOnline, 1000); pollOnline();
 
 // ---------- интерфейс чата ----------
 function setMode(m) {
