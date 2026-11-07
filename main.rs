@@ -1,20 +1,25 @@
-//! Анонимный текстовый чат: HTTP-сервер на чистом std (без внешних крейтов).
-//! События доставляются long-poll'ом, отправка — обычными POST.
+//! Анонимный чат «Эхо»: HTTP + WebSocket на чистом std (без внешних крейтов).
+//! Страница и счётчик онлайна отдаются по HTTP, сам чат идёт по WebSocket (/ws).
 
 mod state;
+mod ws;
 
-use state::{json_str, Err, State};
+use state::{json_str, Prefs, State};
 use std::collections::hash_map::RandomState;
 use std::hash::{BuildHasher, Hasher};
 use std::io::{BufRead, BufReader, Read, Write};
-use std::net::{IpAddr, TcpListener, TcpStream};
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::net::{IpAddr, Shutdown, TcpListener, TcpStream};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
+use ws::Frame;
 
 const INDEX_HTML: &str = include_str!("index.html");
-const POLL_TIMEOUT: Duration = Duration::from_secs(25);
-const MAX_BODY: usize = 4096;
+const HEARTBEAT: Duration = Duration::from_secs(15);
+/// Клиент шлёт пинг каждые 15 с; если тишина дольше, соединение считается мёртвым.
+const WS_READ_TIMEOUT: Duration = Duration::from_secs(45);
+const MAX_FRAME: usize = 4096;
+const MAX_HEAD: u64 = 16 * 1024;
 const MAX_CONNECTIONS: usize = 512;
 
 struct Shared {
@@ -31,9 +36,11 @@ impl Shared {
 struct Req {
     method: String,
     path: String,
-    query: String,
-    body: String,
     ip: IpAddr,
+    host: Option<String>,
+    origin: Option<String>,
+    ws_key: Option<String>,
+    upgrade_ws: bool,
 }
 
 struct Resp {
@@ -46,12 +53,11 @@ fn json(status: u16, body: String) -> Resp {
     Resp { status, ctype: "application/json; charset=utf-8", body }
 }
 
-fn err_resp((code, msg): Err) -> Resp {
+fn err_resp(code: u16, msg: &str) -> Resp {
     json(code, format!("{{\"error\":{}}}", json_str(msg)))
 }
 
-/// Случайный 128-битный токен. RandomState берёт ключи у ОС.
-/// Для продакшена лучше заменить на getrandom/OsRng.
+/// Случайный 128-битный идентификатор. RandomState берёт ключи у ОС.
 fn new_id() -> String {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let mut out = String::new();
@@ -61,101 +67,6 @@ fn new_id() -> String {
         out.push_str(&format!("{:016x}", h.finish()));
     }
     out
-}
-
-fn query_id(q: &str) -> Option<&str> {
-    q.split('&')
-        .find_map(|kv| kv.strip_prefix("id="))
-        .filter(|v| v.len() == 32 && v.bytes().all(|b| b.is_ascii_hexdigit()))
-}
-
-const LANGS: [&str; 2] = ["ru", "en"];
-const TOPICS: [&str; 3] = ["chat", "rp", "advice"];
-const TAGS: [&str; 11] = [
-    "talk", "music", "games", "movies", "anime", "sport", "tech", "books", "travel", "memes", "study",
-];
-
-fn query_param<'a>(q: &'a str, key: &str) -> Option<&'a str> {
-    q.split('&').find_map(|kv| kv.split_once('=').filter(|(k, _)| *k == key).map(|(_, v)| v))
-}
-
-/// Язык и интересы из запроса. Принимаются только значения из белого списка, не больше трёх интересов.
-fn parse_filters(q: &str) -> (String, String, Vec<String>) {
-    let lang = query_param(q, "lang").filter(|l| LANGS.contains(l)).unwrap_or("ru").to_string();
-    let topic = query_param(q, "topic").filter(|t| TOPICS.contains(t)).unwrap_or("chat").to_string();
-    let mut tags: Vec<String> = Vec::new();
-    for t in query_param(q, "tags").unwrap_or("").split(',') {
-        if TAGS.contains(&t) && !tags.iter().any(|x| x == t) && tags.len() < 3 {
-            tags.push(t.to_string());
-        }
-    }
-    (lang, topic, tags)
-}
-
-fn route(sh: &Shared, req: &Req) -> Resp {
-    let now = Instant::now();
-    match (req.method.as_str(), req.path.as_str()) {
-        ("GET", "/") => Resp { status: 200, ctype: "text/html; charset=utf-8", body: INDEX_HTML.to_string() },
-        ("GET", "/api/online") => json(200, format!("{{\"n\":{}}}", sh.lock().online())),
-        ("GET", "/healthz") => json(200, "{\"ok\":true}".into()),
-        ("POST", "/api/join") => {
-            let r = sh.lock().join(req.ip, now, new_id());
-            match r {
-                Ok(id) => json(200, format!("{{\"id\":\"{id}\"}}")),
-                Err(e) => err_resp(e),
-            }
-        }
-        ("GET", "/api/events") => match query_id(&req.query) {
-            Some(id) => long_poll(sh, id),
-            None => err_resp((400, "неверный id")),
-        },
-        ("POST", p @ ("/api/find" | "/api/leave" | "/api/send" | "/api/typing" | "/api/report")) => {
-            let Some(id) = query_id(&req.query) else {
-                return err_resp((400, "неверный id"));
-            };
-            let r = {
-                let mut st = sh.lock();
-                match p {
-                    "/api/find" => {
-                        let (lang, topic, tags) = parse_filters(&req.query);
-                        st.find(id, now, &lang, &topic, &tags)
-                    }
-                    .map(|_| "{\"ok\":true}".to_string()),
-                    "/api/leave" => st.leave(id, now).map(|_| "{\"ok\":true}".to_string()),
-                    "/api/send" => st.send(id, &req.body, now).map(|_| "{\"ok\":true}".to_string()),
-                    "/api/typing" => st.typing(id, now).map(|_| "{\"ok\":true}".to_string()),
-                    _ => st.report(id, now).map(|b| format!("{{\"ok\":true,\"banned\":{b}}}")),
-                }
-            };
-            sh.cv.notify_all();
-            match r {
-                Ok(b) => json(200, b),
-                Err(e) => err_resp(e),
-            }
-        }
-        _ => err_resp((404, "не найдено")),
-    }
-}
-
-fn long_poll(sh: &Shared, id: &str) -> Resp {
-    let deadline = Instant::now() + POLL_TIMEOUT;
-    let mut g = sh.lock();
-    loop {
-        let now = Instant::now();
-        match g.take_events(id, now) {
-            None => return err_resp((404, "нет сессии")),
-            Some(v) if !v.is_empty() => return json(200, format!("[{}]", v.join(","))),
-            _ => {}
-        }
-        if now >= deadline {
-            return json(200, "[]".into());
-        }
-        g = sh
-            .cv
-            .wait_timeout(g, deadline - now)
-            .unwrap_or_else(|e| e.into_inner())
-            .0;
-    }
 }
 
 /// Число доверенных прокси перед сервером (CHAT_PROXY_HOPS). 0 — прокси нет.
@@ -177,19 +88,25 @@ fn client_ip(peer: IpAddr, xff: Option<&str>, hops: usize) -> IpAddr {
     .unwrap_or(peer)
 }
 
-fn read_request(stream: &TcpStream, ip: IpAddr) -> Option<Req> {
-    let mut rd = BufReader::new(stream.take(16 * 1024));
+/// Защита от чужих сайтов: если браузер прислал Origin, он должен совпадать с Host.
+fn origin_ok(origin: Option<&str>, host: Option<&str>) -> bool {
+    match (origin, host) {
+        (None, _) => true,
+        (Some(o), Some(h)) => o.split_once("://").map_or(false, |(_, rest)| rest.eq_ignore_ascii_case(h)),
+        (Some(_), None) => false,
+    }
+}
+
+fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
+    let mut rd = BufReader::new(stream.take(MAX_HEAD));
     let mut line = String::new();
     rd.read_line(&mut line).ok()?;
     let mut parts = line.split_whitespace();
     let method = parts.next()?.to_string();
-    let target = parts.next()?.to_string();
-    let (path, query) = match target.split_once('?') {
-        Some((p, q)) => (p.to_string(), q.to_string()),
-        None => (target, String::new()),
-    };
-    let mut len = 0usize;
-    let mut xff: Option<String> = None;
+    let target = parts.next()?;
+    let path = target.split('?').next().unwrap_or("/").to_string();
+    let (mut host, mut origin, mut ws_key, mut xff) = (None, None, None, None);
+    let mut upgrade_ws = false;
     loop {
         let mut h = String::new();
         if rd.read_line(&mut h).ok()? == 0 {
@@ -200,20 +117,19 @@ fn read_request(stream: &TcpStream, ip: IpAddr) -> Option<Req> {
             break;
         }
         if let Some((k, v)) = h.split_once(':') {
-            if k.eq_ignore_ascii_case("content-length") {
-                len = v.trim().parse().ok()?;
-            } else if k.eq_ignore_ascii_case("x-forwarded-for") {
-                xff = Some(v.trim().to_string());
+            let v = v.trim().to_string();
+            match k.to_ascii_lowercase().as_str() {
+                "host" => host = Some(v),
+                "origin" => origin = Some(v),
+                "sec-websocket-key" => ws_key = Some(v),
+                "x-forwarded-for" => xff = Some(v),
+                "upgrade" => upgrade_ws = v.eq_ignore_ascii_case("websocket"),
+                _ => {}
             }
         }
     }
-    if len > MAX_BODY {
-        return None;
-    }
-    let mut body = vec![0u8; len];
-    rd.read_exact(&mut body).ok()?;
-    let ip = client_ip(ip, xff.as_deref(), proxy_hops());
-    Some(Req { method, path, query, body: String::from_utf8(body).ok()?, ip })
+    let ip = client_ip(peer, xff.as_deref(), proxy_hops());
+    Some(Req { method, path, ip, host, origin, ws_key, upgrade_ws })
 }
 
 fn write_response(mut s: &TcpStream, r: &Resp) {
@@ -222,15 +138,14 @@ fn write_response(mut s: &TcpStream, r: &Resp) {
         400 => "Bad Request",
         403 => "Forbidden",
         404 => "Not Found",
-        409 => "Conflict",
-        413 => "Payload Too Large",
         429 => "Too Many Requests",
         _ => "Error",
     };
     let head = format!(
         "HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nCache-Control: no-store\r\n\
          X-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\n\
-         Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'\r\n\
+         Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; \
+         script-src 'unsafe-inline'; connect-src 'self' ws: wss:\r\n\
          Connection: close\r\n\r\n",
         r.status,
         reason,
@@ -241,18 +156,170 @@ fn write_response(mut s: &TcpStream, r: &Resp) {
     let _ = s.write_all(r.body.as_bytes());
 }
 
-fn handle(sh: &Shared, stream: TcpStream) {
+fn route(sh: &Shared, req: &Req) -> Resp {
+    match (req.method.as_str(), req.path.as_str()) {
+        ("GET", "/") => Resp { status: 200, ctype: "text/html; charset=utf-8", body: INDEX_HTML.to_string() },
+        ("GET", "/healthz") => json(200, "{\"ok\":true}".into()),
+        ("GET", "/api/online") => json(200, format!("{{\"n\":{}}}", sh.lock().online())),
+        _ => err_resp(404, "не найдено"),
+    }
+}
+
+type Writer = Arc<Mutex<TcpStream>>;
+
+fn send_frame(w: &Writer, opcode: u8, payload: &[u8]) -> bool {
+    let mut g = w.lock().unwrap_or_else(|e| e.into_inner());
+    ws::write_frame(&mut *g, opcode, payload).is_ok()
+}
+
+fn send_err(w: &Writer, msg: &str) {
+    send_frame(w, 1, format!("{{\"t\":\"err\",\"m\":{}}}", json_str(msg)).as_bytes());
+}
+
+/// Команды клиента: поля разделены табуляцией.
+///   find \t тема \t свой_пол \t кого_ищем \t свой_возраст \t возрасты_через_запятую
+///   msg \t текст | typing | leave | report | ping
+fn handle_cmd(sh: &Shared, w: &Writer, id: &str, text: &str) {
+    let now = Instant::now();
+    let mut p = text.splitn(2, '\t');
+    let cmd = p.next().unwrap_or("");
+    let rest = p.next().unwrap_or("");
+    let r = {
+        let mut st = sh.lock();
+        match cmd {
+            "ping" => {
+                st.touch(id, now);
+                Ok(())
+            }
+            "find" => {
+                let f: Vec<&str> = rest.split('\t').collect();
+                if f.len() != 5 {
+                    Err((400, "неверный запрос"))
+                } else {
+                    Prefs::parse(f[0], f[1], f[2], f[3], f[4]).and_then(|pf| st.find(id, now, pf))
+                }
+            }
+            "msg" => st.send(id, rest, now),
+            "typing" => st.typing(id, now),
+            "leave" => st.leave(id, now),
+            "report" => st.report(id, now).map(|_| ()),
+            _ => Err((400, "неизвестная команда")),
+        }
+    };
+    sh.cv.notify_all();
+    if let Err((_, m)) = r {
+        send_err(w, m);
+    }
+}
+
+/// Поток-писатель: отправляет события клиенту и шлёт пульс, когда тихо.
+fn writer_loop(sh: Arc<Shared>, w: Writer, id: String, done: Arc<AtomicBool>) {
+    loop {
+        let (events, beat) = {
+            let mut g = sh.lock();
+            loop {
+                if done.load(Ordering::SeqCst) {
+                    return;
+                }
+                match g.take_events(&id) {
+                    None => return,
+                    Some(v) if !v.is_empty() => break (v, false),
+                    _ => {}
+                }
+                let (ng, res) = sh.cv.wait_timeout(g, HEARTBEAT).unwrap_or_else(|e| e.into_inner());
+                g = ng;
+                if res.timed_out() {
+                    break (Vec::new(), true);
+                }
+            }
+        };
+        for e in events {
+            if !send_frame(&w, 1, e.as_bytes()) {
+                done.store(true, Ordering::SeqCst);
+                return;
+            }
+        }
+        if beat && !(send_frame(&w, 9, b"") && send_frame(&w, 1, b"{\"t\":\"hb\"}")) {
+            done.store(true, Ordering::SeqCst);
+            return;
+        }
+    }
+}
+
+fn ws_session(sh: Arc<Shared>, stream: TcpStream, ip: IpAddr, key: &str) {
+    let resp = format!(
+        "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {}\r\n\r\n",
+        ws::accept_key(key)
+    );
+    if (&stream).write_all(resp.as_bytes()).is_err() {
+        return;
+    }
+    let _ = stream.set_read_timeout(Some(WS_READ_TIMEOUT));
+    let _ = stream.set_write_timeout(Some(Duration::from_secs(10)));
+    let _ = stream.set_nodelay(true);
+    let Ok(wclone) = stream.try_clone() else { return };
+    let w: Writer = Arc::new(Mutex::new(wclone));
+
+    let id = new_id();
+    if let Err((_, m)) = sh.lock().join(ip, Instant::now(), id.clone()) {
+        send_err(&w, m);
+        send_frame(&w, 8, b"");
+        let _ = stream.shutdown(Shutdown::Both);
+        return;
+    }
+    sh.cv.notify_all();
+
+    let done = Arc::new(AtomicBool::new(false));
+    {
+        let (sh2, w2, id2, d2) = (Arc::clone(&sh), Arc::clone(&w), id.clone(), Arc::clone(&done));
+        std::thread::spawn(move || writer_loop(sh2, w2, id2, d2));
+    }
+
+    let mut reader = &stream;
+    loop {
+        match ws::read_frame(&mut reader, MAX_FRAME) {
+            Ok(Frame::Text(t)) => handle_cmd(&sh, &w, &id, &t),
+            Ok(Frame::Ping(p)) => {
+                sh.lock().touch(&id, Instant::now());
+                send_frame(&w, 10, &p);
+            }
+            Ok(Frame::Pong) => {
+                sh.lock().touch(&id, Instant::now());
+            }
+            Ok(Frame::Close) | Err(_) => break,
+        }
+    }
+    // Соединение закрыто: убираем сессию, собеседник узнаёт об этом сразу.
+    done.store(true, Ordering::SeqCst);
+    sh.lock().remove(&id);
+    sh.cv.notify_all();
+    send_frame(&w, 8, b"");
+    let _ = stream.shutdown(Shutdown::Both);
+}
+
+fn handle(sh: Arc<Shared>, stream: TcpStream) {
     let _ = stream.set_read_timeout(Some(Duration::from_secs(10)));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(10)));
-    let ip = match stream.peer_addr() {
+    let peer = match stream.peer_addr() {
         Ok(a) => a.ip(),
         Err(_) => return,
     };
-    let resp = match read_request(&stream, ip) {
-        Some(req) => route(sh, &req),
-        None => err_resp((400, "плохой запрос")),
+    let Some(req) = read_request(&stream, peer) else {
+        write_response(&stream, &err_resp(400, "плохой запрос"));
+        return;
     };
-    write_response(&stream, &resp);
+    if req.path == "/ws" && req.upgrade_ws {
+        if !origin_ok(req.origin.as_deref(), req.host.as_deref()) {
+            write_response(&stream, &err_resp(403, "чужой источник"));
+            return;
+        }
+        match req.ws_key.as_deref() {
+            Some(k) if k.len() == 24 => ws_session(sh, stream, req.ip, k),
+            _ => write_response(&stream, &err_resp(400, "нет ключа WebSocket")),
+        }
+        return;
+    }
+    write_response(&stream, &route(&sh, &req));
 }
 
 fn main() {
@@ -279,12 +346,12 @@ fn main() {
     for stream in listener.incoming().flatten() {
         if active.fetch_add(1, Ordering::SeqCst) >= MAX_CONNECTIONS {
             active.fetch_sub(1, Ordering::SeqCst);
-            write_response(&stream, &err_resp((429, "сервер перегружен")));
+            write_response(&stream, &err_resp(429, "сервер перегружен"));
             continue;
         }
         let (sh, act) = (Arc::clone(&shared), Arc::clone(&active));
         std::thread::spawn(move || {
-            handle(&sh, stream);
+            handle(sh, stream);
             act.fetch_sub(1, Ordering::SeqCst);
         });
     }
@@ -295,25 +362,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn filters_are_whitelisted() {
-        let (l, tp, t) = parse_filters("id=x&lang=en&topic=rp&tags=music,evil,games,music,anime,sport");
-        assert_eq!((l.as_str(), tp.as_str()), ("en", "rp"));
-        assert_eq!(t, vec!["music", "games", "anime"]);
-        assert_eq!(parse_filters("id=x&lang=zz&topic=flirt").0, "ru");
-        assert_eq!(parse_filters("id=x&topic=flirt").1, "chat");
-    }
-
-    #[test]
     fn client_ip_uses_trusted_hops_only() {
         let peer: IpAddr = "10.0.0.1".parse().unwrap();
         let real: IpAddr = "1.2.3.4".parse().unwrap();
         assert_eq!(client_ip(peer, Some("9.9.9.9"), 0), peer);
         assert_eq!(client_ip(peer, Some("1.2.3.4"), 1), real);
-        // клиент подделал левое значение, прокси дописал настоящее справа
         assert_eq!(client_ip(peer, Some("6.6.6.6, 1.2.3.4"), 1), real);
         assert_eq!(client_ip(peer, Some("1.2.3.4, 10.1.1.1"), 2), real);
         assert_eq!(client_ip(peer, None, 1), peer);
         assert_eq!(client_ip(peer, Some("мусор"), 1), peer);
         assert_eq!(client_ip(peer, Some("1.2.3.4"), 3), peer);
+    }
+
+    #[test]
+    fn origin_must_match_host() {
+        assert!(origin_ok(None, Some("chat.example")));
+        assert!(origin_ok(Some("https://chat.example"), Some("chat.example")));
+        assert!(origin_ok(Some("http://127.0.0.1:8080"), Some("127.0.0.1:8080")));
+        assert!(!origin_ok(Some("https://evil.example"), Some("chat.example")));
+        assert!(!origin_ok(Some("https://chat.example.evil.com"), Some("chat.example")));
+        assert!(!origin_ok(Some("https://chat.example"), None));
+        assert!(!origin_ok(Some("null"), Some("chat.example")));
     }
 }

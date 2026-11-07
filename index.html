@@ -3,146 +3,181 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-
 <title>Эхо — анонимный чат</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%230c1316'/%3E%3Cpath d='M8 10h20a6 6 0 0 1 6 6v8a6 6 0 0 1-6 6H18l-7 6v-6H8a6 6 0 0 1-6-6v-8a6 6 0 0 1 6-6z' fill='%2342e0b0' transform='translate(3 3) scale(.85)'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%230b1215'/%3E%3Cpath d='M8 10h20a6 6 0 0 1 6 6v8a6 6 0 0 1-6 6H18l-7 6v-6H8a6 6 0 0 1-6-6v-8a6 6 0 0 1 6-6z' fill='%233be0b0' transform='translate(4 4) scale(.82)'/%3E%3C/svg%3E">
 <style>
   :root{
-    --bg:#0c1316; --panel:#121c20; --panel2:#18252a; --line:#223339;
-    --text:#e9f1ef; --muted:#8aa0a0; --accent:#42e0b0; --accent-ink:#06231a;
-    --coral:#ff7a66; --me:#17463b; --them:#1b2a30;
-    --r:16px;
+    --bg:#0b1215; --surface:#111b20; --surface2:#172329; --line:#203238;
+    --text:#e8f1ef; --muted:#88a2a2; --ink:#05211a; --coral:#ff7a66;
+    --me:#16453a; --them:#1a2a31; --glow:#10322d;
+    --topic:#3be0b0;
   }
   :root[data-theme=light]{
-    --bg:#f2f7f6; --panel:#ffffff; --panel2:#e7f0ee; --line:#d2e0dd;
-    --text:#10211e; --muted:#587068; --accent:#12c298; --accent-ink:#03221a;
-    --coral:#d6402b; --me:#c9f2e5; --them:#e5edef; --glow:#d4f3ea;
+    --bg:#f1f6f5; --surface:#ffffff; --surface2:#e8f0ee; --line:#d3e0dd;
+    --text:#10211e; --muted:#587068; --ink:#03211a; --coral:#d23f2a;
+    --me:#c8f1e4; --them:#e4ecee; --glow:#d3f2e9;
   }
-  :root{--glow:#12332f}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
     font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
   body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   [hidden]{display:none!important}
-  button{font:inherit;color:inherit;cursor:pointer}
-  button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+  button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--topic);outline-offset:2px}
+  svg{display:block}
 
-  /* ---------- старт ---------- */
-  #start{min-height:100%;display:flex;flex-direction:column;align-items:center;padding:28px 16px 24px;
-    background:radial-gradient(120% 60% at 50% -10%,var(--glow) 0%,transparent 60%)}
-  .brand{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin-top:4vh}
-  .logo{width:72px;height:72px}
-  .brand h1{margin:0;font-size:40px;letter-spacing:.02em;font-weight:800}
-  .brand p{margin:0;color:var(--muted);max-width:30ch}
-  .card{width:100%;max-width:460px;margin-top:26px;background:var(--panel);border:1px solid var(--line);
-    border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:18px}
-  .label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between}
-  .seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg);padding:4px;border-radius:12px}
-  .seg button{border:0;background:transparent;padding:10px;border-radius:9px;color:var(--muted)}
-  .seg button[aria-pressed=true]{background:var(--panel2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+  /* ---------- меню ---------- */
+  #menu{min-height:100%;padding:14px 16px 28px;position:relative;
+    background:radial-gradient(90% 38% at 50% -6%,var(--glow) 0%,transparent 70%)}
+  .wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  .bar{display:flex;align-items:center;gap:10px;padding:4px 0}
+  .bar .logo{width:34px;height:34px}
+  .bar b{font-size:24px;letter-spacing:.01em}
+  .iconbtn{margin-left:auto;width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center}
+  .iconbtn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  :root:not([data-theme=light]) .i-sun{display:none}
+  :root[data-theme=light] .i-moon{display:none}
+  .lead{margin:2px 0 0;color:var(--muted);font-size:15px}
+
+  .topics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .topic{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:18px;padding:14px 8px 12px;
+    display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;transition:border-color .15s,background .15s,transform .15s}
+  .topic svg{width:28px;height:28px;stroke:var(--tc);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .topic b{font-size:15px}
+  .topic small{font-size:12px;color:var(--muted)}
+  .topic[aria-pressed=true]{border-color:var(--tc);background:color-mix(in srgb,var(--tc) 13%,var(--surface));box-shadow:0 0 0 1px var(--tc) inset}
+  .topic[aria-pressed=true] small{color:var(--text)}
+  .topic:active{transform:scale(.97)}
+  .hint{margin:-4px 2px 0;font-size:13.5px;color:var(--muted);min-height:2.7em}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:14px}
+  .panel h2{margin:0;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;justify-content:space-between;gap:8px}
+  .panel h2 em{font-style:normal;text-transform:none;letter-spacing:0;font-weight:500}
+  .lab{font-size:14px;color:var(--muted);margin-bottom:7px}
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg);padding:4px;border-radius:13px}
+  .seg button{border:0;background:transparent;padding:10px 6px;border-radius:10px;color:var(--muted);font-weight:600}
+  .seg button[aria-pressed=true]{background:var(--surface2);color:var(--text);box-shadow:0 0 0 1px var(--line) inset}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{border:1px solid var(--line);background:transparent;padding:8px 14px;border-radius:999px;color:var(--text)}
-  .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
-  .chip:disabled{opacity:.4;cursor:not-allowed}
-  .agree{display:flex;gap:10px;align-items:flex-start;color:var(--muted);font-size:14px}
-  .agree input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);flex:none}
-  .cta{border:0;border-radius:14px;padding:16px;background:var(--accent);color:var(--accent-ink);font-size:18px;font-weight:700}
-  .cta:disabled{opacity:.4;cursor:not-allowed}
-  .online{font-size:13px;color:var(--muted);text-align:center}
-  .topics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .topics button{border:1px solid var(--line);background:transparent;border-radius:12px;padding:11px 4px;font-weight:600}
-  .topics button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-  .hint{margin-top:8px;font-size:13px;color:var(--muted);min-height:2.6em}
-  .counter{text-align:center;margin-top:20px;font-size:18px}
-  .counter b{font-variant-numeric:tabular-nums}
+  .chip{border:1px solid var(--line);background:transparent;padding:9px 14px;border-radius:999px;font-size:15px}
+  .chip[aria-pressed=true]{background:var(--topic);border-color:var(--topic);color:var(--ink);font-weight:700}
+  .chip:disabled{opacity:.55;cursor:default}
+  .note{font-size:13.5px;color:var(--muted);background:var(--surface2);border-radius:12px;padding:10px 12px}
+  .confirm{display:flex;gap:12px;align-items:flex-start;font-size:15px;border:1px solid color-mix(in srgb,var(--topic) 55%,var(--line));
+    background:color-mix(in srgb,var(--topic) 9%,var(--surface));border-radius:16px;padding:14px;animation:rise .25s ease-out}
+  .confirm input{width:22px;height:22px;margin:1px 0 0;accent-color:var(--topic);flex:none}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .cta{border:0;border-radius:16px;padding:17px;background:var(--topic);color:var(--ink);font-size:18px;font-weight:800;letter-spacing:.01em;transition:opacity .15s,transform .1s}
+  .cta:active:not(:disabled){transform:scale(.985)}
+  .cta:disabled{opacity:.35;cursor:not-allowed}
+  .why{text-align:center;font-size:13.5px;color:var(--muted);min-height:1.3em;margin-top:-6px}
+  .counter{text-align:center;padding-top:6px;border-top:1px solid var(--line);font-size:18px}
+  .counter b{font-variant-numeric:tabular-nums;font-size:22px}
   .counter small{display:block;color:var(--muted);font-size:14px;margin-top:2px}
-  .rules{max-width:460px;width:100%;margin-top:18px;color:var(--muted);font-size:13px;line-height:1.5}
-  .rules summary{cursor:pointer;color:var(--text)}
+  .rules{color:var(--muted);font-size:13.5px;line-height:1.55}
+  .rules summary{cursor:pointer;color:var(--text);font-size:15px}
   .rules ul{margin:8px 0 0;padding-left:20px}
 
   /* ---------- чат ---------- */
-  #chat{height:100%;display:flex;flex-direction:column;max-width:720px;margin:0 auto;padding:10px 12px 12px}
-  .top{display:flex;align-items:center;gap:10px;padding:4px 2px 10px}
-  .top .logo{width:30px;height:30px}
-  .top b{font-size:18px}
-  .tag{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
-  #status{margin-left:auto;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  #chat{height:100%;display:flex;flex-direction:column;max-width:720px;margin:0 auto;padding:8px 12px 12px}
+  .top{display:flex;align-items:center;gap:8px;padding:2px 0 10px;min-height:46px}
+  .back{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none}
+  .back svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .pill{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--muted);white-space:nowrap}
+  .pill.t{color:var(--topic);border-color:color-mix(in srgb,var(--topic) 50%,var(--line))}
+  .pill.p{color:var(--text)}
+  .stat{margin-left:auto;font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:7px;white-space:nowrap}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
-  .dot.on{background:var(--accent)}
+  .dot.on{background:var(--topic)}
   .dot.wait{background:#ffc857;animation:pulse 1.2s infinite}
-  @keyframes pulse{50%{opacity:.35}}
-  #log{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
-    padding:12px;display:flex;flex-direction:column;gap:8px}
-  .m{max-width:82%;padding:9px 13px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .dot.bad{background:var(--coral)}
+  @keyframes pulse{50%{opacity:.3}}
+  #log{flex:1;min-height:0;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:20px;
+    padding:14px 12px;display:flex;flex-direction:column;gap:7px}
+  .m{max-width:82%;padding:9px 13px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere}
   .me{align-self:flex-end;background:var(--me);border-bottom-right-radius:6px}
   .them{align-self:flex-start;background:var(--them);border-bottom-left-radius:6px}
-  .sys{align-self:center;color:var(--muted);font-size:13px;text-align:center;padding:2px 8px}
-  .empty{margin:auto;text-align:center;color:var(--muted);max-width:26ch}
-  .empty .ring{width:54px;height:54px;border-radius:50%;margin:0 auto 14px;border:3px solid var(--accent);opacity:.8;animation:ring 1.6s ease-out infinite}
-  @keyframes ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.25);opacity:0}}
-  #typing{height:22px;color:var(--muted);font-size:13px;padding:2px 6px}
-  .bar{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px}
-  .bar button{padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--panel2)}
-  .bar .next{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
-  .bar .rep{color:var(--coral);border-color:#5a2f2a;background:transparent}
-  .bar button:disabled{opacity:.4;cursor:not-allowed}
+  .sys{align-self:center;color:var(--muted);font-size:13px;text-align:center;padding:4px 10px;max-width:90%}
+  .empty{margin:auto;text-align:center;color:var(--muted);max-width:30ch;line-height:1.5}
+  .ring{width:56px;height:56px;margin:0 auto 16px;position:relative}
+  .ring i{position:absolute;inset:0;border-radius:50%;border:3px solid var(--topic);animation:ring 2s ease-out infinite;opacity:0}
+  .ring i:nth-child(2){animation-delay:.66s}.ring i:nth-child(3){animation-delay:1.33s}
+  @keyframes ring{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.4);opacity:0}}
+  #typing{height:22px;color:var(--muted);font-size:13px;padding:2px 8px}
+  .acts{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;margin-bottom:8px}
+  .acts button{padding:12px 6px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-weight:600}
+  .acts .next{background:var(--topic);border-color:var(--topic);color:var(--ink);font-weight:800}
+  .acts .rep{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 45%,var(--line));background:transparent}
+  .acts button:disabled{opacity:.4;cursor:not-allowed}
   form{display:flex;gap:8px}
-  #text{flex:1;min-width:0;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:16px}
-  #sendBtn{border:0;border-radius:14px;padding:0 18px;background:var(--accent);color:var(--accent-ink);font-weight:700}
+  #text{flex:1;min-width:0;padding:14px 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:16px}
+  #sendBtn{width:52px;border:0;border-radius:50%;background:var(--topic);color:var(--ink);display:grid;place-items:center;flex:none}
+  #sendBtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
   #sendBtn:disabled,#text:disabled{opacity:.4}
-  @media (prefers-reduced-motion:reduce){.dot.wait,.empty .ring{animation:none}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="logo" viewBox="0 0 48 48">
-    <path d="M8 10h20a6 6 0 0 1 6 6v8a6 6 0 0 1-6 6H18l-7 6v-6H8a6 6 0 0 1-6-6v-8a6 6 0 0 1 6-6z" fill="#42e0b0"/>
-    <path d="M38 14.5c3 3 3 9 0 12" fill="none" stroke="#42e0b0" stroke-width="3" stroke-linecap="round"/>
-    <path d="M43 10c5 5.5 5 14.5 0 20" fill="none" stroke="#42e0b0" stroke-width="3" stroke-linecap="round" opacity=".55"/>
-    <circle cx="12" cy="20" r="2.2" fill="#06231a"/><circle cx="19" cy="20" r="2.2" fill="#06231a"/><circle cx="26" cy="20" r="2.2" fill="#06231a"/>
+    <path d="M8 10h20a6 6 0 0 1 6 6v8a6 6 0 0 1-6 6H18l-7 6v-6H8a6 6 0 0 1-6-6v-8a6 6 0 0 1 6-6z" fill="#3be0b0"/>
+    <path d="M38 14.5c3 3 3 9 0 12" fill="none" stroke="#3be0b0" stroke-width="3" stroke-linecap="round"/>
+    <path d="M43 10c5 5.5 5 14.5 0 20" fill="none" stroke="#3be0b0" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+    <circle cx="12" cy="20" r="2.2" fill="#05211a"/><circle cx="19" cy="20" r="2.2" fill="#05211a"/><circle cx="26" cy="20" r="2.2" fill="#05211a"/>
   </symbol>
 </svg>
 
-<main id="start">
-  <div class="brand">
+<main id="menu">
+ <div class="wrap">
+  <div class="bar">
     <svg class="logo" role="img" aria-label="Логотип Эхо"><use href="#logo"/></svg>
-    <h1>Эхо</h1>
-    <p>Случайный собеседник. Без регистрации, переписка не сохраняется.</p>
+    <b>Эхо</b>
+    <button class="iconbtn" id="themeBtn" type="button" aria-label="Сменить цветовую схему">
+      <svg class="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+      <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
   </div>
+  <p class="lead">Случайный собеседник без регистрации. Переписка нигде не сохраняется.</p>
 
-  <section class="card" aria-label="Настройки поиска">
-    <div>
-      <div class="label"><span>Тема общения</span></div>
-      <div class="topics" id="topics">
-        <button type="button" data-topic="chat" aria-pressed="true">Общение</button>
-        <button type="button" data-topic="rp" aria-pressed="false">Ролка</button>
-        <button type="button" data-topic="advice" aria-pressed="false">Советы</button>
-      </div>
-      <div class="hint" id="topicHint"></div>
-    </div>
-    <div>
-      <div class="label"><span>Язык общения</span></div>
-      <div class="seg" id="langSeg">
-        <button type="button" data-lang="ru" aria-pressed="true">Русский</button>
-        <button type="button" data-lang="en" aria-pressed="false">English</button>
-      </div>
-    </div>
-    <div>
-      <div class="label"><span>О чём поговорим</span><span id="tagCount">0 / 3</span></div>
-      <div class="chips" id="chips"></div>
-    </div>
-    <div>
-      <div class="label"><span>Цветовая схема</span></div>
-      <div class="seg" id="themeSeg">
-        <button type="button" data-theme="light" aria-pressed="false">Светлая</button>
-        <button type="button" data-theme="dark" aria-pressed="true">Тёмная</button>
-      </div>
-    </div>
-    <label class="agree"><input type="checkbox" id="age"><span>Мне есть 18 лет. Я не буду присылать оскорбления, угрозы, спам и запрещённый контент.</span></label>
-    <button class="cta" id="go" disabled>Начать чат</button>
-    <div class="online">Интересы помогают найти близкого по темам человека. Если никого нет, соединим с любым.</div>
+  <div class="topics" id="topics" role="group" aria-label="Тема общения">
+    <button class="topic" type="button" data-topic="chat" style="--tc:#3be0b0">
+      <svg viewBox="0 0 24 24"><path d="M4 5h16v10H9l-5 4z"/></svg><b>Общение</b><small>для всех</small>
+    </button>
+    <button class="topic" type="button" data-topic="flirt" style="--tc:#ff7f8f">
+      <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><b>Флирт</b><small>18+</small>
+    </button>
+    <button class="topic" type="button" data-topic="rp" style="--tc:#ffc15a">
+      <svg viewBox="0 0 24 24"><path d="M5 4h14v8a7 7 0 0 1-14 0z"/><path d="M9 10h.01M15 10h.01M9.5 14.5c1.5 1.4 3.5 1.4 5 0"/></svg><b>Ролка</b><small>18+</small>
+    </button>
+  </div>
+  <div class="hint" id="hint"></div>
+
+  <section class="panel" aria-label="Вы">
+    <h2><span>Вы</span></h2>
+    <div><div class="lab">Ваш пол</div>
+      <div class="seg" id="gender">
+        <button type="button" data-v="x">Некто</button><button type="button" data-v="m">М</button><button type="button" data-v="f">Ж</button>
+      </div></div>
+    <div><div class="lab">Ваш возраст</div><div class="chips" id="age"></div></div>
   </section>
+
+  <section class="panel" aria-label="Собеседник">
+    <h2><span>Собеседник</span><em id="agesNote">можно несколько</em></h2>
+    <div><div class="lab">Пол собеседника</div>
+      <div class="seg" id="seek">
+        <button type="button" data-v="any">Не важно</button><button type="button" data-v="m">М</button><button type="button" data-v="f">Ж</button>
+      </div></div>
+    <div><div class="lab">Возраст собеседника</div><div class="chips" id="ages"></div></div>
+    <div class="note" id="safety"></div>
+  </section>
+
+  <label class="confirm" id="confirmBox" hidden>
+    <input type="checkbox" id="confirm"><span>Мне есть 18 лет. Я буду уважать границы собеседника и не присылать оскорбления, угрозы и запрещённый контент.</span>
+  </label>
+
+  <button class="cta" id="go" type="button" disabled>Начать чат</button>
+  <div class="why" id="why"></div>
 
   <div class="counter" id="counter" hidden>Сейчас в чате: <b id="onlineN">0</b><small id="onlineWord"></small></div>
 
@@ -150,128 +185,124 @@
     <summary>Правила и безопасность</summary>
     <ul>
       <li>Не сообщайте личные данные: имя, адрес, телефон, соцсети.</li>
+      <li>Пользователи до 17 лет общаются только друг с другом. Взрослые их не видят.</li>
       <li>Если собеседник ведёт себя плохо, нажмите «Жалоба». После нескольких жалоб от разных людей доступ блокируется.</li>
-      <li>Сервис только для совершеннолетних. Не используйте его, если вам нет 18.</li>
+      <li>Возраст и пол указываются самими пользователями и не проверяются.</li>
       <li>Сообщения не записываются, но собеседник может сделать скриншот.</li>
     </ul>
   </details>
+ </div>
 </main>
 
 <main id="chat" hidden>
   <div class="top">
-    <svg class="logo" aria-hidden="true"><use href="#logo"/></svg><b>Эхо</b><span class="tag" id="topicTag"></span>
-    <span id="status"><span class="dot" id="dot"></span><span id="statusText">…</span></span>
+    <button class="back" id="back" type="button" aria-label="В меню"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <span class="pill t" id="topicPill"></span><span class="pill p" id="partnerPill" hidden></span>
+    <span class="stat"><span class="dot" id="dot"></span><span id="statusText">…</span></span>
   </div>
-  <div id="log"></div>
-  <div id="typing" aria-live="polite"></div>
-  <div class="bar">
-    <button id="stop">Стоп</button>
-    <button id="next" class="next">Следующий</button>
-    <button id="report" class="rep">Жалоба</button>
+  <div id="log" aria-live="polite"></div>
+  <div id="typing"></div>
+  <div class="acts">
+    <button id="stop" type="button">Стоп</button>
+    <button id="next" class="next" type="button">Следующий</button>
+    <button id="report" class="rep" type="button">Жалоба</button>
   </div>
   <form id="form">
     <input id="text" type="text" maxlength="500" autocomplete="off" placeholder="Сообщение…" disabled>
-    <button id="sendBtn" disabled>Отправить</button>
+    <button id="sendBtn" aria-label="Отправить" disabled><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
   </form>
 </main>
 
 <script>
-const TAGS = [['talk','Просто поболтать'],['music','Музыка'],['games','Игры'],['movies','Кино'],['anime','Аниме'],['sport','Спорт'],['tech','Технологии'],['books','Книги'],['travel','Путешествия'],['memes','Мемы'],['study','Учёба']];
 const $ = id => document.getElementById(id);
-const TOPIC_INFO = {
-  chat:   ['Общение',   'Обычный разговор на любую тему.',                      'Собеседник найден. Поздоровайтесь!'],
-  rp:     ['Ролка',     'Ролевая игра: придумайте сюжет и роли вместе.',        'Собеседник найден. Договоритесь о сюжете и ролях.'],
-  advice: ['Советы',    'Расскажите о ситуации и спросите чужое мнение.',       'Собеседник найден. Расскажите, о чём хотите посоветоваться.']
+const TOPICS = {
+  chat:  {name: 'Общение', adult: false, tc: '#3be0b0', hint: 'Обычный разговор на любую тему.',
+          ages: [['u17','до 17 лет'],['a18_21','от 18 до 21 года'],['a22_25','от 22 до 25 лет'],['a26_35','от 26 до 35 лет'],['a36','старше 36 лет']],
+          hello: 'Собеседник найден. Поздоровайтесь!'},
+  flirt: {name: 'Флирт', adult: true, tc: '#ff7f8f', hint: 'Лёгкое общение и знакомства для взрослых.',
+          ages: [['a18_25','от 18 до 25 лет'],['a26_35','от 26 до 35 лет'],['a36','старше 36 лет']],
+          hello: 'Собеседник найден. Уважайте границы друг друга.'},
+  rp:    {name: 'Ролка', adult: true, tc: '#ffc15a', hint: 'Ролевая игра: придумайте сюжет и роли вместе.',
+          ages: [['a18_25','от 18 до 25 лет'],['a26_35','от 26 до 35 лет'],['a36','старше 36 лет']],
+          hello: 'Собеседник найден. Договоритесь о сюжете и ролях.'}
 };
-let sid = null, mode = 'idle', epoch = 0, lang = 'ru', topic = 'chat', theme = 'dark', tags = [], typingTimer = null, lastTypingSent = 0;
+const AGE_SHORT = {u17:'до 17', a18_21:'18–21', a22_25:'22–25', a26_35:'26–35', a36:'36+', a18_25:'18–25'};
+const GENDER_SHORT = {m:'М', f:'Ж', x:'Некто'};
+
+let sel = {topic: 'chat', gender: 'x', seek: 'any', age: null, ages: [], theme: 'dark'};
+try { const s = JSON.parse(localStorage.getItem('echo.v2') || '{}'); for (const k of Object.keys(sel)) if (s[k] !== undefined) sel[k] = s[k]; } catch {}
+if (!TOPICS[sel.topic]) sel.topic = 'chat';
+function save() { try { localStorage.setItem('echo.v2', JSON.stringify(sel)); } catch {} }
 
 // ---------- меню ----------
-try { const s = JSON.parse(localStorage.getItem('echo.prefs') || '{}'); if (s.lang) lang = s.lang; if (TOPIC_INFO[s.topic]) topic = s.topic; if (s.theme === 'light' || s.theme === 'dark') theme = s.theme; if (Array.isArray(s.tags)) tags = s.tags.slice(0, 3); } catch {}
-function savePrefs() { try { localStorage.setItem('echo.prefs', JSON.stringify({lang, topic, theme, tags})); } catch {} }
-
-function applyTheme() { document.documentElement.dataset.theme = theme; }
-function renderMenu() {
-  applyTheme();
-  document.querySelectorAll('#topics button').forEach(b => b.setAttribute('aria-pressed', b.dataset.topic === topic));
-  document.querySelectorAll('#themeSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.theme === theme));
-  $('topicHint').textContent = TOPIC_INFO[topic][1];
-  document.querySelectorAll('#langSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang));
-  $('tagCount').textContent = tags.length + ' / 3';
-  $('chips').innerHTML = '';
-  for (const [id, name] of TAGS) {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'chip'; b.textContent = name;
-    const on = tags.includes(id);
-    b.setAttribute('aria-pressed', on);
-    b.disabled = !on && tags.length >= 3;
-    b.onclick = () => { tags = on ? tags.filter(t => t !== id) : [...tags, id]; savePrefs(); renderMenu(); };
-    $('chips').appendChild(b);
-  }
+const ageList = () => TOPICS[sel.topic].ages;
+function partnerList() {
+  // Для взрослых «до 17» в фильтре не предлагается, подросткам доступны только ровесники.
+  return sel.age === 'u17' ? ageList().filter(a => a[0] === 'u17') : ageList().filter(a => a[0] !== 'u17');
 }
-document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => { lang = b.dataset.lang; savePrefs(); renderMenu(); });
-document.querySelectorAll('#topics button').forEach(b => b.onclick = () => { topic = b.dataset.topic; savePrefs(); renderMenu(); });
-document.querySelectorAll('#themeSeg button').forEach(b => b.onclick = () => { theme = b.dataset.theme; savePrefs(); renderMenu(); });
-$('age').onchange = () => $('go').disabled = !$('age').checked;
+function normalize() {
+  if (!ageList().some(a => a[0] === sel.age)) sel.age = null;
+  const ok = partnerList().map(a => a[0]);
+  sel.ages = sel.age === 'u17' ? ['u17'] : sel.ages.filter(a => ok.includes(a));
+}
+function chip(text, pressed, onclick, disabled) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'chip'; b.textContent = text;
+  b.setAttribute('aria-pressed', pressed); b.disabled = !!disabled; b.onclick = onclick;
+  return b;
+}
+function renderMenu() {
+  normalize();
+  const T = TOPICS[sel.topic];
+  document.documentElement.dataset.theme = sel.theme;
+  document.documentElement.style.setProperty('--topic', T.tc);
+  document.querySelectorAll('.topic').forEach(b => b.setAttribute('aria-pressed', b.dataset.topic === sel.topic));
+  $('hint').textContent = T.hint;
+  document.querySelectorAll('#gender button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === sel.gender));
+  document.querySelectorAll('#seek button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === sel.seek));
+
+  $('age').replaceChildren(...ageList().map(([id, name]) => chip(name, sel.age === id, () => { sel.age = id; save(); renderMenu(); })));
+
+  const minor = sel.age === 'u17';
+  const pl = partnerList();
+  const anyChip = chip('Любой', sel.ages.length === 0, () => { sel.ages = []; save(); renderMenu(); }, minor);
+  $('ages').replaceChildren(anyChip, ...pl.map(([id, name]) => chip(name, sel.ages.includes(id) || minor, () => {
+    sel.ages = sel.ages.includes(id) ? sel.ages.filter(x => x !== id) : [...sel.ages, id]; save(); renderMenu();
+  }, minor)));
+  $('agesNote').textContent = minor ? 'только ровесники' : 'можно несколько';
+  $('safety').textContent = T.adult
+    ? 'Только для взрослых. Отказ означает «нет». Просьбы о личных данных и встречах могут привести к блокировке.'
+    : minor ? 'Вы общаетесь только с теми, кому тоже до 17 лет.'
+            : 'Пользователи до 17 лет общаются только друг с другом и вам не попадутся.';
+
+  $('confirmBox').hidden = !T.adult;
+  const needConfirm = T.adult && !$('confirm').checked;
+  $('go').disabled = !sel.age || needConfirm;
+  $('go').textContent = 'Начать чат';
+  $('why').textContent = !sel.age ? 'Выберите свой возраст' : needConfirm ? 'Подтвердите, что вам есть 18 лет' : '';
+}
+document.querySelectorAll('.topic').forEach(b => b.onclick = () => { sel.topic = b.dataset.topic; $('confirm').checked = false; save(); renderMenu(); });
+document.querySelectorAll('#gender button').forEach(b => b.onclick = () => { sel.gender = b.dataset.v; save(); renderMenu(); });
+document.querySelectorAll('#seek button').forEach(b => b.onclick = () => { sel.seek = b.dataset.v; save(); renderMenu(); });
+$('confirm').onchange = renderMenu;
+$('themeBtn').onclick = () => { sel.theme = sel.theme === 'light' ? 'dark' : 'light'; save(); renderMenu(); };
 renderMenu();
 
-$('go').onclick = async () => {
-  $('start').hidden = true; $('chat').hidden = false; $('topicTag').textContent = TOPIC_INFO[topic][0];
-  try { await join(); await find(); } catch (e) { sys(e.message || 'Не удалось подключиться'); }
-};
-
-// ---------- сеть ----------
-async function api(path, body, extra) {
-  const r = await fetch(path + '?id=' + sid + (extra || ''), {method: 'POST', body: body ?? '', headers: {'Content-Type': 'text/plain; charset=utf-8'}});
-  let j = {}; try { j = await r.json(); } catch {}
-  if (r.status === 404) { await join(); }
-  if (!r.ok) throw new Error(j.error || ('Ошибка ' + r.status));
-  return j;
-}
-const find = () => { clearLog(); return api('/api/find', '', '&lang=' + lang + '&topic=' + topic + '&tags=' + tags.join(',')); };
-
-async function join() {
-  const r = await fetch('/api/join', {method: 'POST'});
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) { sys(j.error || 'Не удалось войти'); setMode('banned'); throw new Error(j.error || 'Не удалось войти'); }
-  sid = j.id; setMode('idle'); poll(++epoch);
-}
-
-async function poll(my) {
-  while (my === epoch) {
-    try {
-      const r = await fetch('/api/events?id=' + sid);
-      if (my !== epoch) return;
-      if (r.status === 404) { sys('Сессия истекла, подключаемся заново…'); await join(); return; }
-      (await r.json()).forEach(handle);
-    } catch { await new Promise(r => setTimeout(r, 2000)); }
-  }
-}
-
-function handle(e) {
-  if (e.t === 'waiting') { setMode('waiting'); showSearching(); }
-  else if (e.t === 'matched') { clearLog(); setMode('chat'); sys(TOPIC_INFO[topic][2]); }
-  else if (e.t === 'msg') { add('them', e.text); $('typing').textContent = ''; }
-  else if (e.t === 'typing') { $('typing').textContent = 'Собеседник печатает…'; clearTimeout(typingTimer); typingTimer = setTimeout(() => $('typing').textContent = '', 3000); }
-  else if (e.t === 'left') { sys('Собеседник завершил чат.'); setMode('ended'); $('typing').textContent = ''; }
-  else if (e.t === 'banned') { sys('Доступ заблокирован из-за жалоб пользователей.'); setMode('banned'); }
-}
-
 // ---------- онлайн ----------
-// Число перерисовывается только когда оно изменилось.
 function plural(n, one, few, many) {
-  const m10 = n % 10, m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return one;
-  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  const a = n % 10, b = n % 100;
+  if (a === 1 && b !== 11) return one;
+  if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return few;
   return many;
 }
 let shownOnline = null;
 async function pollOnline() {
-  if ($('start').hidden || document.hidden) return;
+  if ($('menu').hidden || document.hidden) return;
   try {
     const r = await fetch('/api/online', {cache: 'no-store'});
     if (!r.ok) return;
     const n = (await r.json()).n;
-    if (typeof n !== 'number' || n === shownOnline) return;
+    if (typeof n !== 'number' || n === shownOnline) return; // то же число не перерисовываем
     shownOnline = n;
     $('onlineN').textContent = n;
     $('onlineWord').textContent = n === 0 ? 'Станьте первым!' : plural(n, 'пользователь', 'пользователя', 'пользователей') + '. Присоединяйтесь!';
@@ -280,48 +311,117 @@ async function pollOnline() {
 }
 setInterval(pollOnline, 1000); pollOnline();
 
-// ---------- интерфейс чата ----------
+// ---------- соединение ----------
+let ws = null, lastRx = 0, mode = 'idle', userClosed = false, retries = 0, waitHint = null, typingTimer = null, lastTypingSent = 0, pendingFind = false;
+
+function connect() {
+  return new Promise((resolve, reject) => {
+    userClosed = false;
+    const sock = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+    ws = sock; let opened = false;
+    sock.onopen = () => { opened = true; lastRx = Date.now(); retries = 0; resolve(); };
+    sock.onmessage = e => { lastRx = Date.now(); let j; try { j = JSON.parse(e.data); } catch { return; } handle(j); };
+    sock.onclose = () => { if (ws === sock) { ws = null; onLost(opened); } if (!opened) reject(new Error('нет соединения')); };
+    sock.onerror = () => {};
+  });
+}
+const open = () => ws && ws.readyState === 1;
+function cmd(...parts) { if (open()) { ws.send(parts.join('\t')); return true; } return false; }
+const findCmd = () => cmd('find', sel.topic, sel.gender, sel.seek, sel.age, sel.ages.join(','));
+
+async function startSearch() {
+  clearLog(); setMode('connecting');
+  try { if (!open()) await connect(); findCmd(); }
+  catch { sys('Не удалось подключиться к серверу. Проверьте интернет и нажмите «Следующий».'); setMode('lost'); }
+}
+
+function onLost(wasOpen) {
+  clearTimeout(waitHint); $('typing').textContent = '';
+  if (userClosed) return;
+  if (mode === 'chat') { sys('Соединение потеряно, чат завершён.'); setMode('lost'); }
+  else if (mode === 'waiting' && wasOpen && retries < 3) {
+    retries++; sys('Связь пропала, подключаемся заново…');
+    setTimeout(() => { if (mode === 'waiting' || mode === 'connecting') startSearch(); }, 1000 * retries);
+    setMode('connecting');
+  } else if (mode !== 'banned') { sys('Нет соединения с сервером.'); setMode('lost'); }
+}
+// пульс: клиент шлёт ping, сервер шлёт hb; тишина дольше 40 с = соединение мёртвое
+setInterval(() => { if (open()) cmd('ping'); }, 15000);
+setInterval(() => { if (open() && Date.now() - lastRx > 40000) ws.close(); }, 5000);
+addEventListener('pagehide', () => { userClosed = true; if (ws) ws.close(); });
+
+function handle(e) {
+  if (e.t === 'hb') return;
+  if (e.t === 'err') { sys(e.m); if (mode === 'connecting') setMode('ended'); return; }
+  if (e.t === 'waiting') { setMode('waiting'); showSearching(); }
+  else if (e.t === 'matched') {
+    clearTimeout(waitHint); clearLog(); setMode('chat');
+    const g = GENDER_SHORT[e.g] || '', a = AGE_SHORT[e.a] || '';
+    $('partnerPill').textContent = [g, a].filter(Boolean).join(' · '); $('partnerPill').hidden = false;
+    sys(TOPICS[sel.topic].hello);
+  }
+  else if (e.t === 'msg') { add('them', e.text); $('typing').textContent = ''; }
+  else if (e.t === 'typing') { $('typing').textContent = 'Собеседник печатает…'; clearTimeout(typingTimer); typingTimer = setTimeout(() => $('typing').textContent = '', 3000); }
+  else if (e.t === 'left') { sys('Собеседник завершил чат.'); setMode('ended'); $('typing').textContent = ''; }
+  else if (e.t === 'banned') { sys('Доступ заблокирован из-за жалоб пользователей.'); setMode('banned'); }
+}
+
+// ---------- экран чата ----------
 function setMode(m) {
   mode = m;
   const chat = m === 'chat';
   $('text').disabled = $('sendBtn').disabled = !chat;
   $('stop').disabled = !(chat || m === 'waiting');
-  $('next').disabled = m === 'banned' || m === 'idle';
+  $('next').disabled = m === 'banned' || m === 'connecting';
   $('report').disabled = !(chat || m === 'ended');
-  const label = {idle: 'подключение…', waiting: 'ищем собеседника', chat: 'на связи', ended: 'чат завершён', banned: 'заблокировано'}[m];
-  $('statusText').textContent = label;
-  $('dot').className = 'dot' + (m === 'chat' ? ' on' : m === 'waiting' ? ' wait' : '');
+  $('statusText').textContent = {idle: 'подключение…', connecting: 'подключение…', waiting: 'поиск', chat: 'на связи', ended: 'чат завершён', lost: 'нет связи', banned: 'блокировка'}[m];
+  $('dot').className = 'dot' + (chat ? ' on' : m === 'waiting' || m === 'connecting' ? ' wait' : m === 'lost' || m === 'banned' ? ' bad' : '');
+  if (!chat) $('partnerPill').hidden = m === 'waiting' || m === 'connecting' ? true : $('partnerPill').hidden;
   if (chat) $('text').focus();
 }
-function clearLog() { $('log').innerHTML = ''; }
+function clearLog() { $('log').replaceChildren(); }
 function showSearching() {
   clearLog();
   const d = document.createElement('div'); d.className = 'empty';
-  d.innerHTML = '<div class="ring"></div>Ищем собеседника…<br>Можно подождать или нажать «Стоп».';
+  d.innerHTML = '<div class="ring"><i></i><i></i><i></i></div><div>Ищем собеседника…</div><div id="slow" style="margin-top:10px;font-size:13px"></div>';
   $('log').appendChild(d);
+  clearTimeout(waitHint);
+  waitHint = setTimeout(() => { const s = $('slow'); if (s) s.textContent = 'Пока никого нет с такими настройками. Подождите или смягчите фильтры: пол «Не важно», возраст «Любой».'; }, 20000);
 }
 function add(cls, text) { const d = document.createElement('div'); d.className = 'm ' + cls; d.textContent = text; $('log').appendChild(d); $('log').scrollTop = 1e9; }
 function sys(text) { const d = document.createElement('div'); d.className = 'sys'; d.textContent = text; $('log').appendChild(d); $('log').scrollTop = 1e9; }
 
-$('stop').onclick = async () => { try { await api('/api/leave'); clearLog(); sys('Вы остановили чат. Нажмите «Следующий», чтобы искать дальше.'); setMode('ended'); } catch (e) { sys(e.message); } };
-$('next').onclick = async () => { try { if (mode === 'chat' || mode === 'waiting') await api('/api/leave'); await find(); } catch (e) { sys(e.message); } };
-$('report').onclick = async () => {
+$('go').onclick = () => {
+  $('menu').hidden = true; $('chat').hidden = false;
+  $('topicPill').textContent = TOPICS[sel.topic].name; $('partnerPill').hidden = true;
+  startSearch();
+};
+$('back').onclick = () => {
+  userClosed = true; clearTimeout(waitHint); if (ws) ws.close(); ws = null;
+  $('chat').hidden = true; $('menu').hidden = false; mode = 'idle'; shownOnline = null; pollOnline();
+};
+$('stop').onclick = () => { if (cmd('leave')) { clearTimeout(waitHint); clearLog(); sys('Вы остановили чат. Нажмите «Следующий», чтобы искать дальше.'); setMode('ended'); } };
+$('next').onclick = () => {
+  if (open()) { if (mode === 'chat' || mode === 'waiting') cmd('leave'); clearLog(); setMode('connecting'); findCmd(); }
+  else startSearch();
+};
+$('report').onclick = () => {
   if ($('report').dataset.armed !== '1') {
     $('report').dataset.armed = '1'; $('report').textContent = 'Точно?';
     setTimeout(() => { $('report').dataset.armed = ''; $('report').textContent = 'Жалоба'; }, 3000); return;
   }
   $('report').dataset.armed = ''; $('report').textContent = 'Жалоба';
-  try { await api('/api/report'); await api('/api/leave'); sys('Жалоба отправлена. Спасибо!'); setMode('ended'); } catch (e) { sys(e.message); }
+  if (cmd('report')) { cmd('leave'); sys('Жалоба отправлена. Спасибо!'); setMode('ended'); }
 };
-$('form').onsubmit = async ev => {
+$('form').onsubmit = ev => {
   ev.preventDefault();
   const t = $('text').value.trim();
   if (!t || mode !== 'chat') return;
-  try { await api('/api/send', t); add('me', t); $('text').value = ''; } catch (e) { sys(e.message); }
+  if (cmd('msg', t)) { add('me', t); $('text').value = ''; } else sys('Сообщение не отправлено: нет связи.');
 };
 $('text').oninput = () => {
   const now = Date.now();
-  if (mode === 'chat' && now - lastTypingSent > 2000) { lastTypingSent = now; api('/api/typing').catch(() => {}); }
+  if (mode === 'chat' && now - lastTypingSent > 2000) { lastTypingSent = now; cmd('typing'); }
 };
 </script>
 </body>
