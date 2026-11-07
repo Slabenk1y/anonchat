@@ -436,7 +436,6 @@ mod tests {
         assert!(!origin_ok(Some("https://chat.example"), None));
         assert!(!origin_ok(Some("null"), Some("chat.example")));
     }
-}
 
     fn parse_test_request(raw: &str) -> Option<Req> {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
@@ -449,23 +448,23 @@ mod tests {
 
     #[test]
     fn http_parser_accepts_only_well_formed_http11_origin_form() {
-        let req = parse_test_request("GET /healthz?x=1 HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n").unwrap();
+        let req = parse_test_request("GET /healthz?x=1 HTTP/1.1\r\nHost: localhost\r\n\r\n").unwrap();
         assert_eq!(req.path, "/healthz");
         assert_eq!(req.host.as_deref(), Some("localhost"));
-        assert!(parse_test_request("GET / HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n").is_none());
-        assert!(parse_test_request("GET http://localhost/ HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n").is_none());
-        assert!(parse_test_request("GET / HTTP/1.1\\r\\nHost: localhost\\r\\nHost: evil\\r\\n\\r\\n").is_none());
-        assert!(parse_test_request("GET / HTTP/1.1\\r\\nHost: localhost\\r\\nMalformed\\r\\n\\r\\n").is_none());
-        assert!(parse_test_request("GET / HTTP/1.1\\r\\n\\r\\n").is_none());
+        assert!(parse_test_request("GET / HTTP/1.0\r\nHost: localhost\r\n\r\n").is_none());
+        assert!(parse_test_request("GET http://localhost/ HTTP/1.1\r\nHost: localhost\r\n\r\n").is_none());
+        assert!(parse_test_request("GET / HTTP/1.1\r\nHost: localhost\r\nHost: evil\r\n\r\n").is_none());
+        assert!(parse_test_request("GET / HTTP/1.1\r\nHost: localhost\r\nMalformed\r\n\r\n").is_none());
+        assert!(parse_test_request("GET / HTTP/1.1\r\n\r\n").is_none());
     }
 
     #[test]
     fn http_parser_caps_header_count_and_line_length() {
-        let mut many = String::from("GET / HTTP/1.1\\r\\nHost: localhost\\r\\n");
-        for i in 0..70 { many.push_str(&format!("X-Test-{i}: x\\r\\n")); }
-        many.push_str("\\r\\n");
+        let mut many = String::from("GET / HTTP/1.1\r\nHost: localhost\r\n");
+        for i in 0..70 { many.push_str(&format!("X-Test-{i}: x\r\n")); }
+        many.push_str("\r\n");
         assert!(parse_test_request(&many).is_none());
-        let long = format!("GET / HTTP/1.1\\r\\nHost: localhost\\r\\nX-Test: {}\\r\\n\\r\\n", "x".repeat(9000));
+        let long = format!("GET / HTTP/1.1\r\nHost: localhost\r\nX-Test: {}\r\n\r\n", "x".repeat(9000));
         assert!(parse_test_request(&long).is_none());
     }
-
+}
