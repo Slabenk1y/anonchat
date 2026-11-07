@@ -471,7 +471,6 @@
   .intro-orbit{flex:0 0 104px;width:104px;height:104px;border-radius:30px;background:color-mix(in srgb,var(--brand) 20%,var(--surface));display:grid;place-items:center}.intro-orbit svg{width:66px;height:66px}
   .topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:17px;margin:0;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow)}
   .topics-label{grid-column:1/-1;margin:0 0 2px;color:var(--text);font-size:14px;font-weight:800}
-  .topic[data-topic="flirt"],.topic[data-topic="rp"]{display:none!important}
   .topic{min-height:54px;padding:12px 15px;border:1px solid var(--line);border-radius:13px;background:var(--surface2);color:var(--text);box-shadow:none;gap:7px;transition:background .16s,border-color .16s,transform .16s}
   .topic svg{display:block;width:20px;height:20px}.topic b{font-size:14px;font-weight:750}.topic small{display:block;font-size:10px;color:var(--muted)}
   .topic[aria-pressed=true]{background:color-mix(in srgb,var(--brand) 20%,var(--surface2));border-color:var(--brand);color:var(--text);box-shadow:inset 0 0 0 1px var(--brand)}
@@ -547,12 +546,6 @@
     <button class="topic" type="button" data-topic="chat" style="--tc:#3be0b0">
       <b>Общение</b>
     </button>
-    <button class="topic" type="button" data-topic="flirt" style="--tc:#ff7f8f">
-      <b>Флирт 18+</b>
-    </button>
-    <button class="topic" type="button" data-topic="rp" style="--tc:#ffc15a">
-      <b>Ролка 18+</b>
-    </button>
   </div>
   <div class="hint" id="hint"></div>
 
@@ -593,10 +586,6 @@
     </select>
   </div>
   <div class="note" id="safety"></div>
-
-  <label class="confirm" id="confirmBox" hidden>
-    <input type="checkbox" id="confirm"><span>Мне есть 18 лет. Я буду уважать границы собеседника и не присылать оскорбления, угрозы и запрещённый контент.</span>
-  </label>
 
   <button class="cta" id="go" type="button" disabled>Начать чат</button>
   <div class="why" id="why"></div>
@@ -676,15 +665,9 @@
 <script>
 const $ = id => document.getElementById(id);
 const TOPICS = {
-  chat:  {name: 'Общение', adult: false, tc: '#3be0b0', hint: 'Обычный разговор на любую тему.',
+  chat:  {name: 'Общение', tc: '#3be0b0', hint: 'Обычный разговор на любую тему.',
           ages: [['u17','до 17 лет'],['a18_21','от 18 до 21 года'],['a22_25','от 22 до 25 лет'],['a26_35','от 26 до 35 лет'],['a36','старше 36 лет']],
-          hello: 'Собеседник найден. Поздоровайтесь!'},
-  flirt: {name: 'Флирт', adult: true, tc: '#ff7f8f', hint: 'Лёгкое общение и знакомства для взрослых.',
-          ages: [['a18_25','от 18 до 25 лет'],['a26_35','от 26 до 35 лет'],['a36','старше 36 лет']],
-          hello: 'Собеседник найден. Уважайте границы друг друга.'},
-  rp:    {name: 'Ролка', adult: true, tc: '#ffc15a', hint: 'Ролевая игра: придумайте сюжет и роли вместе.',
-          ages: [['a18_25','от 18 до 25 лет'],['a26_35','от 26 до 35 лет'],['a36','старше 36 лет']],
-          hello: 'Собеседник найден. Договоритесь о сюжете и ролях.'}
+          hello: 'Собеседник найден. Поздоровайтесь!'}
 };
 const AGE_SHORT = {u17:'до 17', a18_21:'18–21', a22_25:'22–25', a26_35:'26–35', a36:'36+', a18_25:'18–25'};
 const GENDER_SHORT = {m:'М', f:'Ж', x:'Некто'};
@@ -767,21 +750,17 @@ function renderMenu() {
     sel.ages = sel.ages.includes(id) ? sel.ages.filter(x => x !== id) : [...sel.ages, id]; save(); renderMenu();
   }, minor)));
   $('agesNote').textContent = minor ? 'только ровесники' : 'можно несколько';
-  $('safety').textContent = T.adult
-    ? 'Только для взрослых. Отказ означает «нет». Просьбы о личных данных и встречах могут привести к блокировке.'
-    : minor ? 'Вы общаетесь только с теми, кому тоже до 17 лет.'
-            : 'Пользователи до 17 лет общаются только друг с другом и вам не попадутся.';
+  $('safety').textContent = minor
+    ? 'Подбор несовершеннолетних и взрослых разделён серверными правилами. Не сообщайте личные данные.'
+    : 'Не сообщайте личные данные. Если собеседник нарушает правила, завершите чат и отправьте жалобу.';
 
-  $('confirmBox').hidden = !T.adult;
-  const needConfirm = T.adult && !$('confirm').checked;
-  $('go').disabled = !sel.age || needConfirm;
+  $('go').disabled = !sel.age;
   $('go').textContent = 'Начать чат';
-  $('why').textContent = !sel.age ? 'Выберите свой возраст' : needConfirm ? 'Подтвердите, что вам есть 18 лет' : '';
+  $('why').textContent = !sel.age ? 'Выберите свой возраст' : '';
 }
-document.querySelectorAll('.topic').forEach(b => b.onclick = () => { sel.topic = b.dataset.topic; $('confirm').checked = false; save(); renderMenu(); });
+document.querySelectorAll('.topic').forEach(b => b.onclick = () => { sel.topic = b.dataset.topic; save(); renderMenu(); });
 document.querySelectorAll('#gender button').forEach(b => b.onclick = () => { sel.gender = b.dataset.v; save(); renderMenu(); });
 document.querySelectorAll('#seek button').forEach(b => b.onclick = () => { sel.seek = b.dataset.v; save(); renderMenu(); });
-$('confirm').onchange = renderMenu;
 function applyTheme() {
   const t=THEMES[sel.theme]||THEMES.ocean, root=document.documentElement;
   root.dataset.theme=sel.theme;
