@@ -470,6 +470,8 @@ mod tests {
         assert!(parse_test_request("GET / HTTP/1.1\r\nHost: localhost\r\nHost: evil\r\n\r\n").is_none());
         assert!(parse_test_request("GET / HTTP/1.1\r\nHost: localhost\r\nMalformed\r\n\r\n").is_none());
         assert!(parse_test_request("GET / HTTP/1.1\r\n\r\n").is_none());
+        let huge_target = format!("GET /{} HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n", "x".repeat(9000));
+        assert!(parse_test_request(&huge_target).is_none());
     }
 
     #[test]
