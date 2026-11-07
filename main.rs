@@ -168,7 +168,7 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
     Some(Req { method, path, ip, host, origin, ws_key, upgrade_ws, connection_upgrade, ws_version_13 })
 }
 
-fn write_response(mut s: &TcpStream, r: &Resp) {
+fn response_head(r: &Resp) -> String {
     let reason = match r.status {
         200 => "OK",
         400 => "Bad Request",
@@ -177,7 +177,11 @@ fn write_response(mut s: &TcpStream, r: &Resp) {
         429 => "Too Many Requests",
         _ => "Error",
     };
-    let head = format!("HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nX-Frame-Options: DENY\r\nCross-Origin-Opener-Policy: same-origin\r\nCross-Origin-Resource-Policy: same-origin\r\nX-Permitted-Cross-Domain-Policies: none\r\nPermissions-Policy: camera=(), microphone=(), geolocation=()\r\nContent-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self' ws: wss:\r\nConnection: close\r\n\r\n", r.status, reason, r.ctype, r.body.len());
+    format!("HTTP/1.1 {} {}\\r\\nContent-Type: {}\\r\\nContent-Length: {}\\r\\nCache-Control: no-store\\r\\nX-Content-Type-Options: nosniff\\r\\nReferrer-Policy: no-referrer\\r\\nX-Frame-Options: DENY\\r\\nCross-Origin-Opener-Policy: same-origin\\r\\nCross-Origin-Resource-Policy: same-origin\\r\\nX-Permitted-Cross-Domain-Policies: none\\r\\nPermissions-Policy: camera=(), microphone=(), geolocation=()\\r\\nContent-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self' ws: wss:\\r\\nConnection: close\\r\\n\\r\\n", r.status, reason, r.ctype, r.body.len())
+}
+
+fn write_response(mut s: &TcpStream, r: &Resp) {
+    let head = response_head(r);
     let _ = s.write_all(head.as_bytes());
     let _ = s.write_all(r.body.as_bytes());
 }
@@ -435,6 +439,8 @@ mod tests {
         assert!(!origin_ok(Some("https://chat.example.evil.com"), Some("chat.example")));
         assert!(!origin_ok(Some("https://chat.example"), None));
         assert!(!origin_ok(Some("null"), Some("chat.example")));
+        assert!(!origin_ok(Some("ftp://chat.example"), Some("chat.example")));
+        assert!(!origin_ok(Some("javascript://chat.example"), Some("chat.example")));
     }
 
     fn parse_test_request(raw: &str) -> Option<Req> {
@@ -467,4 +473,14 @@ mod tests {
         let long = format!("GET / HTTP/1.1\r\nHost: localhost\r\nX-Test: {}\r\n\r\n", "x".repeat(9000));
         assert!(parse_test_request(&long).is_none());
     }
+    #[test]
+    fn response_headers_are_well_formed_and_hardened() {
+        let head = response_head(&Resp { status: 200, ctype: "text/plain", body: "ok".into() });
+        assert!(head.starts_with("HTTP/1.1 200 OK\\r\\n"));
+        assert!(head.ends_with("\\r\\n\\r\\n"));
+        assert!(head.contains("frame-ancestors 'none'"));
+        assert!(head.contains("X-Frame-Options: DENY"));
+        assert!(head.contains("Permissions-Policy: camera=(), microphone=(), geolocation=()"));
+    }
+
 }
