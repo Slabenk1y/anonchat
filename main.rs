@@ -182,7 +182,7 @@ fn response_head(r: &Resp) -> String {
         429 => "Too Many Requests",
         _ => "Error",
     };
-    format!("HTTP/1.1 {} {}\\r\\nContent-Type: {}\\r\\nContent-Length: {}\\r\\nCache-Control: no-store\\r\\nX-Content-Type-Options: nosniff\\r\\nReferrer-Policy: no-referrer\\r\\nX-Frame-Options: DENY\\r\\nCross-Origin-Opener-Policy: same-origin\\r\\nCross-Origin-Resource-Policy: same-origin\\r\\nX-Permitted-Cross-Domain-Policies: none\\r\\nPermissions-Policy: camera=(), microphone=(), geolocation=()\\r\\nContent-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self' ws: wss:\\r\\nConnection: close\\r\\n\\r\\n", r.status, reason, r.ctype, r.body.len())
+    format!("HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nX-Frame-Options: DENY\r\nCross-Origin-Opener-Policy: same-origin\r\nCross-Origin-Resource-Policy: same-origin\r\nX-Permitted-Cross-Domain-Policies: none\r\nPermissions-Policy: camera=(), microphone=(), geolocation=()\r\nContent-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self' ws: wss:\r\nConnection: close\r\n\r\n", r.status, reason, r.ctype, r.body.len())
 }
 
 fn write_response(mut s: &TcpStream, r: &Resp) {
