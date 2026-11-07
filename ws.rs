@@ -72,6 +72,10 @@ fn bad(msg: &str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, msg.to_string())
 }
 
+fn valid_close_code(code: u16) -> bool {
+    matches!(code, 1000..=1003 | 1007..=1014 | 3000..=4999)
+}
+
 /// Читает один кадр клиента. Кадры клиента обязаны быть замаскированными.
 /// Фрагментированные и бинарные кадры не поддерживаются (браузер шлёт короткий текст целиком).
 pub fn read_frame<R: Read>(r: &mut R, max: usize) -> io::Result<Frame> {
@@ -148,6 +152,20 @@ pub fn write_frame<W: Write>(w: &mut W, opcode: u8, payload: &[u8]) -> io::Resul
     }
     if opcode >= 8 && payload.len() > 125 {
         return Err(bad("слишком длинный управляющий кадр"));
+    }
+    if opcode == 1 && std::str::from_utf8(payload).is_err() {
+        return Err(bad("текстовый кадр не UTF-8"));
+    }
+    if opcode == 8 {
+        if payload.len() == 1 {
+            return Err(bad("неверный close-кадр"));
+        }
+        if payload.len() >= 2 {
+            let code = u16::from_be_bytes([payload[0], payload[1]]);
+            if !valid_close_code(code) || std::str::from_utf8(&payload[2..]).is_err() {
+                return Err(bad("неверный close-кадр"));
+            }
+        }
     }
     let mut f = vec![0x80 | opcode];
     match payload.len() {
@@ -270,5 +288,8 @@ mod tests {
         let mut out = Vec::new();
         assert!(write_frame(&mut out, 9, &vec![0; 126]).is_err());
         assert!(write_frame(&mut out, 3, b"x").is_err());
+        assert!(write_frame(&mut out, 1, &[0xff]).is_err());
+        assert!(write_frame(&mut out, 8, &[0]).is_err());
+        assert!(write_frame(&mut out, 8, &[0x03, 0xed]).is_err()); // reserved close code 1005
     }
 }
