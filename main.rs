@@ -106,20 +106,39 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
     let mut parts = line.split_whitespace();
     let method = parts.next()?.to_string();
     let target = parts.next()?;
+    let version = parts.next()?;
+    if version != "HTTP/1.1" || parts.next().is_some() || !target.starts_with('/') || target.starts_with("//")
+        || target.bytes().any(|b| b.is_ascii_control() || b == b' ') {
+        return None;
+    }
     let path = target.split('?').next().unwrap_or("/").to_string();
     let (mut host, mut origin, mut ws_key, mut xff) = (None, None, None, None);
     let (mut upgrade_ws, mut connection_upgrade, mut ws_version_13) = (false, false, false);
+    let mut header_count = 0usize;
     loop {
         let mut h = String::new();
         if rd.read_line(&mut h).ok()? == 0 {
             return None;
         }
-        let h = h.trim_end();
+        if h.len() > 8 * 1024 {
+            return None;
+        }
+        let h = h.trim_end_matches(['\\r', '\\n']);
         if h.is_empty() {
             break;
         }
+        header_count += 1;
+        if header_count > 64 || h.starts_with([' ', '\\t']) {
+            return None;
+        }
         if let Some((k, v)) = h.split_once(':') {
+            if k.is_empty() || !k.bytes().all(|b| b.is_ascii_alphanumeric() || b"!#$%&'*+-.^_`|~".contains(&b)) {
+                return None;
+            }
             let v = v.trim().to_string();
+            if v.bytes().any(|b| b == 0 || b == b'\\r' || b == b'\\n') {
+                return None;
+            }
             match k.to_ascii_lowercase().as_str() {
                 "host" => host = Some(v),
                 "origin" => origin = Some(v),
@@ -147,19 +166,7 @@ fn write_response(mut s: &TcpStream, r: &Resp) {
         429 => "Too Many Requests",
         _ => "Error",
     };
-    let head = format!(
-        "HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nCache-Control: no-store\r\n\
-         X-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\n\
-         X-Frame-Options: DENY\r\nCross-Origin-Opener-Policy: same-origin\r\n\\
-         Cross-Origin-Resource-Policy: same-origin\r\nPermissions-Policy: camera=(), microphone=(), geolocation=()\r\n\\
-         Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'unsafe-inline'; \\
-         script-src 'unsafe-inline'; connect-src 'self' ws: wss:\r\n\\
-         Connection: close\r\n\r\n",
-        r.status,
-        reason,
-        r.ctype,
-        r.body.len()
-    );
+    let head = format!("HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nX-Frame-Options: DENY\r\nCross-Origin-Opener-Policy: same-origin\r\nCross-Origin-Resource-Policy: same-origin\r\nX-Permitted-Cross-Domain-Policies: none\r\nPermissions-Policy: camera=(), microphone=(), geolocation=()\r\nContent-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self' ws: wss:\r\nConnection: close\r\n\r\n", r.status, reason, r.ctype, r.body.len());
     let _ = s.write_all(head.as_bytes());
     let _ = s.write_all(r.body.as_bytes());
 }
