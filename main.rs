@@ -150,8 +150,10 @@ fn write_response(mut s: &TcpStream, r: &Resp) {
     let head = format!(
         "HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nCache-Control: no-store\r\n\
          X-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\n\
-         Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; \
-         script-src 'unsafe-inline'; connect-src 'self' ws: wss:\r\n\
+         X-Frame-Options: DENY\r\nCross-Origin-Opener-Policy: same-origin\r\n\\
+         Cross-Origin-Resource-Policy: same-origin\r\nPermissions-Policy: camera=(), microphone=(), geolocation=()\r\n\\
+         Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'unsafe-inline'; \\
+         script-src 'unsafe-inline'; connect-src 'self' ws: wss:\r\n\\
          Connection: close\r\n\r\n",
         r.status,
         reason,
