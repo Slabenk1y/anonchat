@@ -596,7 +596,7 @@
     <summary>Правила и безопасность</summary>
     <ul>
       <li>Не сообщайте личные данные: имя, адрес, телефон, соцсети.</li>
-      <li>Пользователи до 17 лет общаются только друг с другом. Взрослые их не видят.</li>
+      <li>Пользователи 13–17 лет общаются только друг с другом. Взрослые их не видят.</li>
       <li>Если собеседник ведёт себя плохо, нажмите «Жалоба». После нескольких жалоб от разных людей доступ блокируется.</li>
       <li>Возраст и пол указываются самими пользователями и не проверяются.</li>
       <li>Сообщения не записываются, но собеседник может сделать скриншот.</li>
@@ -666,10 +666,10 @@
 const $ = id => document.getElementById(id);
 const TOPICS = {
   chat:  {name: 'Общение', tc: '#3be0b0', hint: 'Обычный разговор на любую тему.',
-          ages: [['u17','до 17 лет'],['a18_21','от 18 до 21 года'],['a22_25','от 22 до 25 лет'],['a26_35','от 26 до 35 лет'],['a36','старше 36 лет']],
+          ages: [['teen_13_17','13–17 лет'],['a18_21','от 18 до 21 года'],['a22_25','от 22 до 25 лет'],['a26_35','от 26 до 35 лет'],['a36','старше 36 лет']],
           hello: 'Собеседник найден. Поздоровайтесь!'}
 };
-const AGE_SHORT = {u17:'до 17', a18_21:'18–21', a22_25:'22–25', a26_35:'26–35', a36:'36+', a18_25:'18–25'};
+const AGE_SHORT = {teen_13_17:'13–17', a18_21:'18–21', a22_25:'22–25', a26_35:'26–35', a36:'36+', a18_25:'18–25'};
 const GENDER_SHORT = {m:'М', f:'Ж', x:'Некто'};
 
 const THEMES = {
@@ -716,13 +716,13 @@ function initSettings() {
 // ---------- меню ----------
 const ageList = () => TOPICS[sel.topic].ages;
 function partnerList() {
-  // Для взрослых «до 17» в фильтре не предлагается, подросткам доступны только ровесники.
-  return sel.age === 'u17' ? ageList().filter(a => a[0] === 'u17') : ageList().filter(a => a[0] !== 'u17');
+  // Для взрослых «13–17» в фильтре не предлагается, подросткам доступны только ровесники.
+  return sel.age === 'teen_13_17' ? ageList().filter(a => a[0] === 'teen_13_17') : ageList().filter(a => a[0] !== 'teen_13_17');
 }
 function normalize() {
   if (!ageList().some(a => a[0] === sel.age)) sel.age = null;
   const ok = partnerList().map(a => a[0]);
-  sel.ages = sel.age === 'u17' ? ['u17'] : sel.ages.filter(a => ok.includes(a));
+  sel.ages = sel.age === 'teen_13_17' ? ['teen_13_17'] : sel.ages.filter(a => ok.includes(a));
 }
 function chip(text, pressed, onclick, disabled) {
   const b = document.createElement('button');
@@ -743,7 +743,7 @@ function renderMenu() {
 
   $('age').replaceChildren(...ageList().map(([id, name]) => chip(name, sel.age === id, () => { sel.age = id; save(); renderMenu(); })));
 
-  const minor = sel.age === 'u17';
+  const minor = sel.age === 'teen_13_17';
   const pl = partnerList();
   const anyChip = chip('Любой', sel.ages.length === 0, () => { sel.ages = []; save(); renderMenu(); }, minor);
   $('ages').replaceChildren(anyChip, ...pl.map(([id, name]) => chip(name, sel.ages.includes(id) || minor, () => {
