@@ -227,21 +227,17 @@ impl State {
     }
 
     fn find_mode(&mut self, id: &str, now: Instant, prefs: Prefs, random: bool) -> Result<(), Err> {
-        let ip = {
+        let (ip, was_waiting) = {
             let u = self.users.get_mut(id).ok_or((404, "нет сессии"))?;
             u.last_seen = now;
             if u.partner.is_some() {
                 return Err((409, "вы уже в чате"));
             }
-            if u.waiting {
-                // Уже ищем: обновляем фильтры и режим, не меняя место в очереди.
-                u.prefs = Some(prefs);
-                u.random_search = random;
-                return Ok(());
-            }
+            let was_waiting = u.waiting;
+            // Можно переключить уже идущий поиск в случайный режим без дублирования очереди.
             u.prefs = Some(prefs.clone());
             u.random_search = random;
-            u.ip
+            (u.ip, was_waiting)
         };
         if self.is_banned(ip, now) {
             return Err((403, "вы заблокированы"));
@@ -272,8 +268,10 @@ impl State {
             }
             None => {
                 self.users.get_mut(id).unwrap().waiting = true;
-                self.queue.push_back(id.to_string());
-                self.push(id, ev("waiting"));
+                if !was_waiting {
+                    self.queue.push_back(id.to_string());
+                    self.push(id, ev("waiting"));
+                }
             }
         }
         Ok(())
