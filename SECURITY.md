@@ -1,7 +1,8 @@
 # SECURITY
 
 ## Текущее состояние
-- Есть проверка Origin для WebSocket, ограничение размера кадров, лимиты подключений, лимит сессий с IP и rate limit сообщений.
+- Есть проверка Origin для WebSocket (только HTTP/HTTPS и точное совпадение authority с Host), ограничение размера кадров, лимиты подключений, лимит сессий с IP и rate limit сообщений.
+- HTTP/1.1 parser rejects malformed/duplicate headers, oversized lines and excessive header counts; this is defense-in-depth, not a substitute for a maintained HTTP server.
 - HTTP-ответы дополнены CSP `frame-ancestors 'none'`, `X-Frame-Options: DENY`, COOP/CORP и Permissions-Policy, запрещающей камеру, микрофон и геолокацию в браузере.
 - Ограничения, сессии, жалобы и баны хранятся в памяти и сбрасываются при перезапуске.
 - Возраст и пол вводятся пользователем; достоверной проверки возраста нет.
