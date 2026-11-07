@@ -41,7 +41,10 @@
   .settings-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px}
   .settings-overlay[hidden]{display:none}
   .settings-backdrop{position:absolute;inset:0;border:0;background:#0009;cursor:default}
-  .settings-panel{position:relative;width:min(420px,100%);padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 20px 70px #0007}
+  .settings-panel{position:relative;width:min(440px,100%);max-height:min(80vh,560px);overflow-y:auto;padding:22px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:0 20px 70px #0007}
+  .settings-panel .settings-body{position:static;width:auto;padding:0;background:transparent;border:0;box-shadow:none;display:grid;gap:12px}
+  .bar #settingsBtn{margin-left:auto}
+  .bar #themeBtn{margin-left:0}
   .settings-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
   .settings-heading h2{margin:0;font-size:20px}
   .settings-heading button{width:36px;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);font-size:25px;line-height:1}
@@ -56,20 +59,15 @@
   .switch input:checked+span:after{transform:translateX(18px);background:var(--ink)}
   .switch input:focus-visible+span{outline:2px solid var(--topic);outline-offset:3px}
 
-  .settings summary{list-style:none;width:38px;height:38px;border:1px solid var(--line);border-radius:12px;background:var(--surface);display:grid;place-items:center;cursor:pointer}
-  .settings summary::-webkit-details-marker{display:none}
-  .settings summary:after{content:none}
-  .settings summary svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-  .settings[open] .settings-body{display:grid}
-  .settings-body{display:none;position:absolute;right:0;top:46px;z-index:10;width:min(290px,calc(100vw - 32px));gap:13px;padding:15px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 32px #0004}
-  .setting{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px}
-  .setting small{display:block;color:var(--muted);font-size:12px}
-  .switch{width:44px;height:26px;position:relative;flex:none}
+  .settings-body{display:grid;position:static;width:auto;gap:16px;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none}
+  .setting{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:15px;padding:8px 0}
+  .setting small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .switch{width:46px;height:27px;position:relative;flex:none}
   .switch input{position:absolute;opacity:0;width:1px;height:1px}
   .switch span{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:.15s}
-  .switch span:after{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:var(--text);transition:.15s}
+  .switch span:after{content:'';position:absolute;width:21px;height:21px;left:3px;top:3px;border-radius:50%;background:var(--text);transition:.15s}
   .switch input:checked+span{background:var(--topic)}
-  .switch input:checked+span:after{transform:translateX(18px);background:var(--ink)}
+  .switch input:checked+span:after{transform:translateX(19px);background:var(--ink)}
   .switch input:focus-visible+span{outline:2px solid var(--topic);outline-offset:3px}
   :root[data-compact=true] #log{gap:3px;padding:9px}
   :root[data-compact=true] .m{padding:6px 10px}
@@ -143,9 +141,12 @@
   .search-screen h2{font-size:21px;margin:8px 0 4px;color:var(--text)}
   .search-screen p{margin:0;color:var(--muted);font-size:14px;max-width:28ch}
   .search-art{width:190px;height:170px;position:relative;display:grid;place-items:center}
-  .mouse-sausage{position:relative;z-index:2;width:170px;height:140px;display:grid;place-items:center;animation:mouseSausage 1.15s linear infinite;filter:drop-shadow(0 7px 7px #0003)}
-  .mouse-sausage svg{width:170px;height:140px;overflow:visible}
-  .sausage-character{transform-origin:95px 82px}
+  .mouse-sausage{position:relative;z-index:2;width:min(300px,90%);height:150px;display:grid;place-items:center;filter:drop-shadow(0 5px 5px #0002)}
+  .mouse-sausage svg{width:100%;height:150px;overflow:visible}
+  .sausage-body{fill:#f5d1d8;stroke:#d5a1ad;stroke-width:2;stroke-linejoin:round;transform-box:fill-box;transform-origin:0% 50%;animation:sausageWave 1.05s ease-in-out infinite}
+  .mouse-head{transform-box:fill-box;transform-origin:50% 50%;animation:mouseBob 1.05s ease-in-out infinite}
+  @keyframes sausageWave{0%,100%{transform:translateY(0) skewY(-2deg) scaleY(.98)}25%{transform:translateY(-7px) skewY(4deg) scaleY(1.04)}50%{transform:translateY(3px) skewY(-4deg) scaleY(.96)}75%{transform:translateY(-4px) skewY(3deg) scaleY(1.03)}}
+  @keyframes mouseBob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
   .orbit{position:absolute;border:1px dashed color-mix(in srgb,var(--topic) 55%,transparent);border-radius:50%;width:145px;height:65px;transform:rotate(-22deg);animation:orbitSpin 5s linear infinite}
   .orbit-b{width:165px;height:82px;transform:rotate(48deg);animation-direction:reverse;opacity:.55}
   @keyframes mouseSausage{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
@@ -283,26 +284,28 @@
   </div>
   <section id="searchScreen" class="search-screen" hidden aria-live="polite">
     <div class="search-art" aria-hidden="true">
-      <div class="mouse-sausage" role="img" aria-label="Розовая мышка-сосиска">
-        <svg viewBox="0 0 190 150" aria-hidden="true">
-          <g class="sausage-character">
-            <path d="M45 87 C25 80 17 95 26 106 C34 116 49 108 55 101" fill="none" stroke="#f28caf" stroke-width="9" stroke-linecap="round"/>
-            <ellipse cx="95" cy="82" rx="54" ry="31" fill="#f49ab8" stroke="#d96f96" stroke-width="3"/>
-            <ellipse cx="59" cy="55" rx="21" ry="23" fill="#f49ab8" stroke="#d96f96" stroke-width="3"/>
-            <ellipse cx="131" cy="55" rx="21" ry="23" fill="#f49ab8" stroke="#d96f96" stroke-width="3"/>
-            <ellipse cx="59" cy="56" rx="10" ry="13" fill="#ffc4d6"/><ellipse cx="131" cy="56" rx="10" ry="13" fill="#ffc4d6"/>
-            <ellipse cx="95" cy="80" rx="48" ry="25" fill="#f7a9c2"/>
-            <circle cx="78" cy="77" r="3.7" fill="#492b3a"/><circle cx="111" cy="77" r="3.7" fill="#492b3a"/>
-            <ellipse cx="95" cy="87" rx="5" ry="3.5" fill="#d95f89"/>
-            <path d="M89 94 Q95 100 101 94" fill="none" stroke="#8f405f" stroke-width="2" stroke-linecap="round"/>
-            <ellipse cx="67" cy="89" rx="8" ry="4" fill="#f07f9f" opacity=".7"/><ellipse cx="123" cy="89" rx="8" ry="4" fill="#f07f9f" opacity=".7"/>
-            <path d="M70 108 Q95 119 120 108" fill="none" stroke="#d96f96" stroke-width="2" stroke-linecap="round"/>
+      <div class="mouse-sausage" role="img" aria-label="Длинная розовая мышка-сосиска, извивается волной">
+        <svg viewBox="0 0 320 150" aria-hidden="true">
+          <path class="sausage-body" d="M45 66 C88 53 116 68 151 59 C190 49 218 63 250 54 C278 47 297 55 309 62 C304 83 291 98 268 100 C231 105 207 91 172 101 C126 113 91 93 45 98 Z"/>
+          <g class="mouse-head">
+            <path d="M52 72 C39 67 31 75 29 84" fill="none" stroke="#d99aa9" stroke-width="2"/>
+            <ellipse cx="45" cy="43" rx="17" ry="23" fill="#f5d1d8" stroke="#d5a1ad" stroke-width="2"/>
+            <ellipse cx="78" cy="42" rx="17" ry="22" fill="#f5d1d8" stroke="#d5a1ad" stroke-width="2"/>
+            <ellipse cx="45" cy="45" rx="9" ry="14" fill="#eeb5c1"/>
+            <ellipse cx="78" cy="44" rx="9" ry="13" fill="#eeb5c1"/>
+            <ellipse cx="61" cy="77" rx="34" ry="25" fill="#f5d1d8" stroke="#d5a1ad" stroke-width="2"/>
+            <circle cx="51" cy="70" r="4.5" fill="#242024"/>
+            <circle cx="79" cy="70" r="4.5" fill="#242024"/>
+            <circle cx="50" cy="68.5" r="1.3" fill="#fff"/><circle cx="78" cy="68.5" r="1.3" fill="#fff"/>
+            <ellipse cx="34" cy="81" rx="5" ry="3.5" fill="#292126"/>
+            <path d="M30 80 L5 72 M30 84 L3 85 M32 88 L8 98" fill="none" stroke="#51434a" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M62 89 Q68 94 75 89" fill="none" stroke="#a66e7d" stroke-width="1.6" stroke-linecap="round"/>
           </g>
         </svg>
       </div>
       <span class="orbit orbit-a"></span><span class="orbit orbit-b"></span>
     </div>
-    <h2>Мышка сосиска, туц тудуц</h2>
+    <h2>Ищем собеседника</h2>
     <p id="searchCaption">Подбираем человека по вашим настройкам…</p>
     <div class="search-dots"><i></i><i></i><i></i></div>
     <button id="cancelSearch" type="button">Отменить поиск</button>
