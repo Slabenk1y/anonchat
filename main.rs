@@ -6,6 +6,7 @@ mod ws;
 
 use state::{json_str, Prefs, State};
 use std::collections::hash_map::RandomState;
+use std::collections::HashSet;
 use std::hash::{BuildHasher, Hasher};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{IpAddr, Shutdown, TcpListener, TcpStream};
@@ -115,6 +116,7 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
     let (mut host, mut origin, mut ws_key, mut xff) = (None, None, None, None);
     let (mut upgrade_ws, mut connection_upgrade, mut ws_version_13) = (false, false, false);
     let mut header_count = 0usize;
+    let mut seen_headers = HashSet::new();
     loop {
         let mut h = String::new();
         if rd.read_line(&mut h).ok()? == 0 {
@@ -123,12 +125,12 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
         if h.len() > 8 * 1024 {
             return None;
         }
-        let h = h.trim_end_matches(['\r', '\n']);
+        let h = h.trim_end_matches(&['\r', '\n'][..]);
         if h.is_empty() {
             break;
         }
         header_count += 1;
-        if header_count > 64 || h.starts_with([' ', '\t']) {
+        if header_count > 64 || h.starts_with(' ') || h.starts_with('\t') {
             return None;
         }
         if let Some((k, v)) = h.split_once(':') {
@@ -139,7 +141,11 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
             if v.bytes().any(|b| b == 0 || b == b'\r' || b == b'\n') {
                 return None;
             }
-            match k.to_ascii_lowercase().as_str() {
+            let name = k.to_ascii_lowercase();
+            if !seen_headers.insert(name.clone()) {
+                return None;
+            }
+            match name.as_str() {
                 "host" => host = Some(v),
                 "origin" => origin = Some(v),
                 "sec-websocket-key" => ws_key = Some(v),
@@ -151,7 +157,12 @@ fn read_request(stream: &TcpStream, peer: IpAddr) -> Option<Req> {
                 "sec-websocket-version" => ws_version_13 = v == "13",
                 _ => {}
             }
+        } else {
+            return None;
         }
+    }
+    if host.as_deref().map_or(true, |h| h.is_empty() || h.bytes().any(|b| b.is_ascii_control() || b.is_ascii_whitespace())) {
+        return None;
     }
     let ip = client_ip(peer, xff.as_deref(), proxy_hops());
     Some(Req { method, path, ip, host, origin, ws_key, upgrade_ws, connection_upgrade, ws_version_13 })
@@ -426,3 +437,35 @@ mod tests {
         assert!(!origin_ok(Some("null"), Some("chat.example")));
     }
 }
+
+    fn parse_test_request(raw: &str) -> Option<Req> {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let mut client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+        client.write_all(raw.as_bytes()).unwrap();
+        client.shutdown(Shutdown::Write).unwrap();
+        let (server, _) = listener.accept().unwrap();
+        read_request(&server, "127.0.0.1".parse().unwrap())
+    }
+
+    #[test]
+    fn http_parser_accepts_only_well_formed_http11_origin_form() {
+        let req = parse_test_request("GET /healthz?x=1 HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n").unwrap();
+        assert_eq!(req.path, "/healthz");
+        assert_eq!(req.host.as_deref(), Some("localhost"));
+        assert!(parse_test_request("GET / HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n").is_none());
+        assert!(parse_test_request("GET http://localhost/ HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n").is_none());
+        assert!(parse_test_request("GET / HTTP/1.1\\r\\nHost: localhost\\r\\nHost: evil\\r\\n\\r\\n").is_none());
+        assert!(parse_test_request("GET / HTTP/1.1\\r\\nHost: localhost\\r\\nMalformed\\r\\n\\r\\n").is_none());
+        assert!(parse_test_request("GET / HTTP/1.1\\r\\n\\r\\n").is_none());
+    }
+
+    #[test]
+    fn http_parser_caps_header_count_and_line_length() {
+        let mut many = String::from("GET / HTTP/1.1\\r\\nHost: localhost\\r\\n");
+        for i in 0..70 { many.push_str(&format!("X-Test-{i}: x\\r\\n")); }
+        many.push_str("\\r\\n");
+        assert!(parse_test_request(&many).is_none());
+        let long = format!("GET / HTTP/1.1\\r\\nHost: localhost\\r\\nX-Test: {}\\r\\n\\r\\n", "x".repeat(9000));
+        assert!(parse_test_request(&long).is_none());
+    }
+
