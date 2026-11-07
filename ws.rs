@@ -206,7 +206,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn rejects_invalid_control_frames_and_reserved_opcodes() {
         // Ping must be final and no longer than 125 bytes.
         let mut ping = masked(9, b"ok");
