@@ -459,7 +459,6 @@
     #menu>.wrap>section.panel[aria-label="Вы"]{grid-area:you}
     #menu>.wrap>section.panel[aria-label="Собеседник"]{grid-area:partner}
     #menu>.wrap>.theme-row{grid-area:theme}
-    #menu>.wrap>.theme-row{grid-area:theme}
     #menu>.wrap>.confirm{grid-area:confirm}
     #menu>.wrap>#go{grid-area:go}
     #menu>.wrap>.why{grid-area:why}
@@ -469,7 +468,7 @@
   @media(max-width:699px){
     #menu{padding:10px 10px 24px}
     #menu>.wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:
-      "bar bar" "topics topics" "hint hint" "you partner" "confirm confirm" "go go" "why why" "counter counter" "rules rules";gap:9px}
+      "bar bar" "topics topics" "hint hint" "you partner" "theme theme" "confirm confirm" "go go" "why why" "counter counter" "rules rules";gap:9px}
     #menu>.wrap>.bar{grid-area:bar}
     #menu>.wrap>.topics{grid-area:topics}
     #menu>.wrap>.hint{grid-area:hint}
@@ -724,6 +723,8 @@ function renderMenu() {
   normalize();
   const T = TOPICS[sel.topic];
   document.documentElement.dataset.theme = sel.theme;
+  $('lightThemeBtn').setAttribute('aria-pressed', sel.theme === 'light');
+  $('darkThemeBtn').setAttribute('aria-pressed', sel.theme === 'dark');
   document.documentElement.style.setProperty('--topic', T.tc);
   document.querySelectorAll('.topic').forEach(b => b.setAttribute('aria-pressed', b.dataset.topic === sel.topic));
   $('hint').textContent = T.hint;
