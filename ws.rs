@@ -126,6 +126,15 @@ pub fn read_frame<R: Read>(r: &mut R, max: usize) -> io::Result<Frame> {
     match opcode {
         1 => String::from_utf8(payload).map(Frame::Text).map_err(|_| bad("не UTF-8")),
         8 if payload.len() == 1 => Err(bad("неверный close-кадр")),
+        8 if payload.len() >= 2 => {
+            let code = u16::from_be_bytes([payload[0], payload[1]]);
+            let valid_code = matches!(code, 1000..=1003 | 1007..=1014 | 3000..=4999);
+            if !valid_code {
+                return Err(bad("недопустимый код закрытия"));
+            }
+            std::str::from_utf8(&payload[2..]).map_err(|_| bad("неверный UTF-8 в close-кадре"))?;
+            Ok(Frame::Close)
+        }
         8 => Ok(Frame::Close),
         9 => Ok(Frame::Ping(payload)),
         10 => Ok(Frame::Pong),
@@ -134,6 +143,12 @@ pub fn read_frame<R: Read>(r: &mut R, max: usize) -> io::Result<Frame> {
 }
 
 pub fn write_frame<W: Write>(w: &mut W, opcode: u8, payload: &[u8]) -> io::Result<()> {
+    if !matches!(opcode, 1 | 8 | 9 | 10) {
+        return Err(bad("неподдерживаемый тип кадра"));
+    }
+    if opcode >= 8 && payload.len() > 125 {
+        return Err(bad("слишком длинный управляющий кадр"));
+    }
     let mut f = vec![0x80 | opcode];
     match payload.len() {
         n if n < 126 => f.push(n as u8),
@@ -230,5 +245,30 @@ mod tests {
         let mut out = Vec::new();
         write_frame(&mut out, 1, &vec![b'x'; 200]).unwrap();
         assert_eq!(&out[..4], &[0x81, 126, 0, 200]);
+    }
+
+    #[test]
+    fn validates_close_status_and_reason() {
+        let mut valid = 1000u16.to_be_bytes().to_vec();
+        valid.extend_from_slice("нормально".as_bytes());
+        let frame = masked(8, &valid);
+        assert!(matches!(read_frame(&mut &frame[..], 4096).unwrap(), Frame::Close));
+
+        for code in [0u16, 999, 1004, 1005, 1006, 1015, 2000, 2999, 5000, 65535] {
+            let frame = masked(8, &code.to_be_bytes());
+            assert!(read_frame(&mut &frame[..], 4096).is_err(), "код {code} должен отклоняться");
+        }
+
+        let mut invalid_utf8 = 1000u16.to_be_bytes().to_vec();
+        invalid_utf8.push(0xff);
+        let frame = masked(8, &invalid_utf8);
+        assert!(read_frame(&mut &frame[..], 4096).is_err());
+    }
+
+    #[test]
+    fn writer_rejects_invalid_control_frames() {
+        let mut out = Vec::new();
+        assert!(write_frame(&mut out, 9, &vec![0; 126]).is_err());
+        assert!(write_frame(&mut out, 3, b"x").is_err());
     }
 }
